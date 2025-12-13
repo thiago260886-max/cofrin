@@ -1,82 +1,153 @@
 import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Card, Title, IconButton, useTheme } from 'react-native-paper';
-import QuickActions from '../../components/QuickActions';
-import OverviewStat from '../../components/OverviewStat';
+import { View, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
+import { Card, Text, useTheme, Snackbar } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AddTransactionModal from '../../components/transactions/AddTransactionModal';
-import { spacing } from '../../theme';
-import { Snackbar } from 'react-native-paper';
 import { useTransactionsState } from '../../state/useTransactions';
+import { formatCurrencyBRL } from '../../utils/format';
 
 interface Props {
   username?: string;
   revenue?: number | string;
   expenses?: number | string;
-  actions?: Array<any>;
   onCreateTransaction?: (payload: any) => void;
 }
 
-import { formatCurrencyBRL } from '../../utils/format';
-
-export default function HomeOverview({ username = 'Usuário', revenue = 0, expenses = 0, actions = [], onCreateTransaction }: Props) {
+export default function HomeOverview({ 
+  username = 'Usuário', 
+  revenue = 0, 
+  expenses = 0, 
+  onCreateTransaction 
+}: Props) {
   const theme = useTheme();
+  const { width } = useWindowDimensions();
+  const isSmallScreen = width < 380;
 
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<'despesa' | 'receita' | 'transfer'>('despesa');
-
   const [items, setItems] = useTransactionsState();
   const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMsg, setSnackbarMsg] = useState('');
 
-  function openModal(type: 'despesa' | 'receita' | 'transfer') {
-    console.log('[HomeOverview] openModal', type);
+  const openModal = (type: 'despesa' | 'receita' | 'transfer') => {
     setModalType(type);
     setModalVisible(true);
-  }
+  };
 
-  const defaultActions = [
-    { key: 'despesa', label: 'Despesa', icon: 'minus', onPress: () => openModal('despesa') },
-    { key: 'receita', label: 'Receita', icon: 'plus', onPress: () => openModal('receita') },
-    { key: 'transfer', label: 'Transferência', icon: 'swap-horizontal', onPress: () => openModal('transfer') },
-  ];
+  const handleSave = (payload: any) => {
+    setModalVisible(false);
 
-  // If parent passed actions, merge them with defaults so missing onPress will open modal
-  const defaultByKey: Record<string, any> = {};
-  defaultActions.forEach((a) => (defaultByKey[a.key] = a));
+    const tx = {
+      id: String(Date.now()),
+      date: payload?.date instanceof Date 
+        ? payload.date.toISOString() 
+        : new Date().toISOString(),
+      title: payload.description || 
+        (payload.type === 'despesa' ? 'Despesa' : payload.type === 'receita' ? 'Receita' : 'Transferência'),
+      account: payload.account || 'Conta',
+      category: payload.category,
+      amount: payload.amount,
+      type: payload.type === 'despesa' ? 'paid' : payload.type === 'receita' ? 'received' : 'transfer',
+    };
 
-  function normalizeKey(k: string) {
-    if (!k) return k;
-    const s = String(k).toLowerCase();
-    if (s.startsWith('trans')) return 'transfer';
-    return s;
-  }
+    try {
+      setItems((s: any[]) => [tx, ...s]);
+    } catch {
+      onCreateTransaction?.(payload);
+    }
 
-  const actionsToRender = (actions && actions.length > 0)
-    ? actions.map((a: any) => {
-        const key = normalizeKey(a.key ?? a);
-        const def = defaultByKey[key] || {};
-        return { ...def, ...a, key };
-      })
-    : defaultActions;
+    onCreateTransaction?.(payload);
+    setSnackbarVisible(true);
+  };
+
+  // Action button component
+  const ActionButton = ({ 
+    icon, 
+    color, 
+    label, 
+    onPress 
+  }: { 
+    icon: string; 
+    color: string; 
+    label: string; 
+    onPress: () => void;
+  }) => (
+    <Pressable 
+      onPress={onPress} 
+      style={({ pressed }) => [
+        styles.actionButton,
+        { opacity: pressed ? 0.8 : 1 }
+      ]}
+    >
+      <View style={[styles.actionIcon, { backgroundColor: color }]}>
+        <MaterialCommunityIcons name={icon as any} size={24} color="#fff" />
+      </View>
+      <Text variant="labelSmall" style={styles.actionLabel}>{label}</Text>
+    </Pressable>
+  );
+
+  // Stat component
+  const StatItem = ({ 
+    label, 
+    value, 
+    color, 
+    align = 'left' 
+  }: { 
+    label: string; 
+    value: string; 
+    color: string; 
+    align?: 'left' | 'right';
+  }) => (
+    <View style={[styles.statItem, align === 'right' && styles.statItemRight]}>
+      <Text variant="bodySmall" style={styles.statLabel}>{label}</Text>
+      <Text variant="titleMedium" style={[styles.statValue, { color }]}>{value}</Text>
+    </View>
+  );
 
   return (
-    <ErrorBoundary>
+    <>
       <Card style={styles.card} mode="elevated">
-        <View style={styles.headerRow}>
-          <Title style={styles.title}>Olá, {username}</Title>
-          <IconButton icon="bell-outline" size={20} onPress={() => {}} accessibilityLabel="Notificações" />
+        {/* Greeting */}
+        <Text variant="headlineSmall" style={styles.greeting}>
+          Olá, {username}
+        </Text>
+
+        {/* Quick Actions */}
+        <View style={[styles.actionsRow, isSmallScreen && styles.actionsRowSmall]}>
+          <ActionButton
+            icon="minus"
+            color={theme.colors.error}
+            label="DESPESA"
+            onPress={() => openModal('despesa')}
+          />
+          <ActionButton
+            icon="plus"
+            color={theme.colors.primary}
+            label="RECEITA"
+            onPress={() => openModal('receita')}
+          />
+          <ActionButton
+            icon="swap-horizontal"
+            color="#64748b"
+            label="TRANSF."
+            onPress={() => openModal('transfer')}
+          />
         </View>
 
-        <QuickActions actions={actionsToRender} onAction={(key) => {
-          const k = normalizeKey(String(key));
-          if (k === 'despesa' || k === 'receita' || k === 'transfer') openModal(k as any);
-        }} />
-
-        <Title style={styles.subTitle}>Visão geral</Title>
-
-        <View style={styles.row}>
-          <OverviewStat label="Receitas no mês" value={formatCurrencyBRL(revenue)} color={theme.colors.primary} />
-          <OverviewStat label="Despesas no mês" value={formatCurrencyBRL(expenses)} color={(theme as any).colors?.error || '#B00020'} align="right" />
+        {/* Stats Section */}
+        <Text variant="labelMedium" style={styles.sectionTitle}>Visão geral</Text>
+        
+        <View style={styles.statsRow}>
+          <StatItem 
+            label="Receitas no mês" 
+            value={formatCurrencyBRL(revenue)} 
+            color={theme.colors.primary} 
+          />
+          <StatItem 
+            label="Despesas no mês" 
+            value={formatCurrencyBRL(expenses)} 
+            color={theme.colors.error}
+            align="right"
+          />
         </View>
       </Card>
 
@@ -84,78 +155,83 @@ export default function HomeOverview({ username = 'Usuário', revenue = 0, expen
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         initialType={modalType}
-        onSave={(payload) => {
-          setModalVisible(false);
-
-          // Build a Transaction object compatible with transactionsState.Transaction
-          const tx = {
-            id: String(Date.now()),
-            date: payload?.date ? (payload.date instanceof Date ? payload.date.toISOString() : new Date(payload.date).toISOString()) : new Date().toISOString(),
-            title: payload.description || (payload.type === 'despesa' ? 'Despesa' : payload.type === 'receita' ? 'Receita' : 'Transferência'),
-            account: payload.account || 'Conta',
-            category: payload.category,
-            amount: payload.amount,
-            type: payload.type === 'despesa' ? 'paid' : payload.type === 'receita' ? 'received' : 'transfer',
-          } as any;
-
-          // Update global transactions state
-          try {
-            setItems((s: any[]) => [tx, ...s]);
-          } catch (e) {
-            // If parent provided a callback, call it as fallback
-            if (onCreateTransaction) onCreateTransaction(payload);
-          }
-
-          // Also notify parent if provided
-          if (onCreateTransaction) onCreateTransaction(payload);
-
-          // Show confirmation snackbar
-          setSnackbarMsg('Lançamento salvo');
-          setSnackbarVisible(true);
-        }}
+        onSave={handleSave}
       />
 
-      <Snackbar visible={snackbarVisible} onDismiss={() => setSnackbarVisible(false)} duration={2500} action={{ label: 'Fechar', onPress: () => setSnackbarVisible(false) }}>
-        {snackbarMsg}
+      <Snackbar 
+        visible={snackbarVisible} 
+        onDismiss={() => setSnackbarVisible(false)} 
+        duration={2000}
+      >
+        Lançamento salvo com sucesso!
       </Snackbar>
-    </ErrorBoundary>
+    </>
   );
 }
 
-class ErrorBoundary extends React.Component<any, { hasError: boolean; error?: Error; info?: any }> {
-  constructor(props: any) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error: Error, info: any) {
-    console.error('ErrorBoundary caught', error, info);
-    this.setState({ error, info });
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <View style={{ padding: 16 }}>
-          <Title>Erro ao renderizar</Title>
-          <View style={{ height: 8 }} />
-          <OverviewStat label="Erro" value={String(this.state.error ?? 'unknown')} />
-        </View>
-      );
-    }
-    // @ts-ignore
-    return this.props.children;
-  }
-}
-
 const styles = StyleSheet.create({
-  card: { padding: spacing.md },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { fontSize: 20, marginBottom: 8 },
-  subTitle: { fontSize: 14, marginTop: 10, color: '#6b6b6b' },
-  row: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 },
+  card: {
+    padding: 20,
+    borderRadius: 16,
+    marginHorizontal: 16,
+    marginTop: 8,
+  },
+  greeting: {
+    fontWeight: '600',
+    marginBottom: 20,
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    gap: 24,
+    marginBottom: 24,
+  },
+  actionsRowSmall: {
+    gap: 16,
+  },
+  actionButton: {
+    alignItems: 'center',
+  },
+  actionIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+  },
+  actionLabel: {
+    marginTop: 8,
+    color: '#64748b',
+    fontWeight: '600',
+    fontSize: 11,
+    letterSpacing: 0.5,
+  },
+  sectionTitle: {
+    color: '#94a3b8',
+    marginBottom: 12,
+    fontWeight: '500',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  statItem: {
+    flex: 1,
+  },
+  statItemRight: {
+    alignItems: 'flex-end',
+  },
+  statLabel: {
+    color: '#64748b',
+    marginBottom: 4,
+  },
+  statValue: {
+    fontWeight: '700',
+    fontSize: 18,
+  },
 });
