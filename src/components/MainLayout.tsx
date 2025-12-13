@@ -19,7 +19,10 @@ export default function MainLayout({ children }: Props) {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<'despesa' | 'receita' | 'transfer'>('despesa');
 
-  const bottomPad = useMemo(() => FOOTER_HEIGHT + Math.max(insets.bottom, 10) + 22, [insets.bottom]);
+  const bottomPad = useMemo(
+    () => FOOTER_HEIGHT + 6 + Math.max(insets.bottom, 8) + 16,
+    [insets.bottom]
+  );
 
   function openAdd() {
     setModalType('despesa');
@@ -69,6 +72,8 @@ export default function MainLayout({ children }: Props) {
       <AppFooter
         onHome={() => navigation.navigate('Bem-vindo' as any)}
         onAdd={openAdd}
+        onLaunches={() => navigation.navigate('Lançamentos' as any)}
+        onGoals={() => navigation.navigate('Metas do ano' as any)}
         onReports={() => navigation.navigate('Relatórios' as any)}
       />
 

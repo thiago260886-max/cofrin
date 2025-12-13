@@ -8,6 +8,7 @@ import Settings from "../screens/Settings";
 import { useAuth } from "../contexts/authContext";
 import Launches from "../screens/Launches";
 import Reports from "../screens/Reports";
+import Goals from "../screens/Goals";
 
 const Stack = createNativeStackNavigator();
 
@@ -27,6 +28,7 @@ export default function RootNavigation() {
           <Stack.Screen name="Bem-vindo" component={Home} />
           <Stack.Screen name="Lançamentos" component={Launches} />
           <Stack.Screen name="Relatórios" component={Reports} />
+          <Stack.Screen name="Metas do ano" component={Goals} />
           <Stack.Screen name="Configurações" component={Settings} />
         </Stack.Navigator>
       ) : (
