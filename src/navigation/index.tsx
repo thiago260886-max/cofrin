@@ -8,6 +8,7 @@ import Settings from "../screens/Settings";
 import EditProfile from "../screens/EditProfile";
 import ConfigureAccounts from "../screens/ConfigureAccounts";
 import CreditCards from "../screens/CreditCards";
+import CreditCardBillDetails from "../screens/CreditCardBillDetails";
 import Categories from "../screens/Categories";
 import { useAuth } from "../contexts/authContext";
 import Launches from "../screens/Launches";
@@ -37,6 +38,7 @@ export default function RootNavigation() {
           <Stack.Screen name="EditProfile" component={EditProfile} />
           <Stack.Screen name="ConfigureAccounts" component={ConfigureAccounts} />
           <Stack.Screen name="CreditCards" component={CreditCards} />
+          <Stack.Screen name="CreditCardBillDetails" component={CreditCardBillDetails} />
           <Stack.Screen name="Categories" component={Categories} />
         </Stack.Navigator>
       ) : (

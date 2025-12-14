@@ -72,9 +72,14 @@ export default function Home() {
     }
   };
 
-  // Navegar para cartões de crédito
+  // Navegar para fatura do cartão de crédito
   const handleCreditCardPress = (card: any) => {
-    navigation.navigate('CreditCards');
+    navigation.navigate('CreditCardBillDetails', {
+      creditCardId: card.id,
+      creditCardName: card.name,
+      month: currentMonth,
+      year: currentYear,
+    });
   };
 
   const handleAddCreditCard = () => {

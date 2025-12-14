@@ -3,15 +3,22 @@ import { View, Text, StyleSheet, ScrollView, Pressable, Alert, RefreshControl, M
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import TransactionsList, { TransactionListItem } from '../components/transactions/TransactionsList';
+import CreditCardBillItem from '../components/transactions/CreditCardBillItem';
 import AddTransactionModal, { EditableTransaction } from '../components/transactions/AddTransactionModal';
 import { useTransactions } from '../hooks/useFirebaseTransactions';
+import { useCreditCards } from '../hooks/useCreditCards';
 import { useAppTheme } from '../contexts/themeContext';
+import { useAuth } from '../contexts/authContext';
 import { useTransactionRefresh } from '../contexts/transactionRefreshContext';
 import { formatCurrencyBRL } from '../utils/format';
 import AppHeader from '../components/AppHeader';
 import MainLayout from '../components/MainLayout';
 import { spacing, borderRadius, getShadow } from '../theme';
 import type { Transaction, TransactionStatus } from '../types/firebase';
+import {
+    generateBillsForMonth,
+    CreditCardBillWithTransactions
+} from '../services/creditCardBillService';
 
 // Tipos dos parâmetros de navegação
 interface RouteParams {
@@ -28,8 +35,9 @@ const MONTHS = [
 export default function Launches() {
   const { colors } = useAppTheme();
   const { refreshKey, triggerRefresh } = useTransactionRefresh();
+  const { user } = useAuth();
   const route = useRoute();
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   
   // Parâmetros de navegação (filtro por conta)
   const params = (route.params as RouteParams) || {};
@@ -59,6 +67,13 @@ export default function Launches() {
   const [statusModalVisible, setStatusModalVisible] = useState(false);
   const [statusTransactionId, setStatusTransactionId] = useState<string | null>(null);
   const [statusTransactionTitle, setStatusTransactionTitle] = useState<string>('');
+  
+  // Estado para faturas de cartão de crédito
+  const [creditCardBills, setCreditCardBills] = useState<CreditCardBillWithTransactions[]>([]);
+  const [billsLoading, setBillsLoading] = useState(false);
+  
+  // Hook de cartões de crédito
+  const { activeCards } = useCreditCards();
 
   // Hook do Firebase - com filtro de conta se presente, senão por mês/ano
   const transactionsOptions = filterAccountId 
@@ -79,6 +94,41 @@ export default function Launches() {
     updateTransaction 
   } = useTransactions(transactionsOptions);
   
+  // Carregar faturas de cartão de crédito
+  const loadCreditCardBills = async () => {
+    if (!user || filterAccountId || activeCards.length === 0) {
+      setCreditCardBills([]);
+      return;
+    }
+    
+    setBillsLoading(true);
+    try {
+      const bills = await generateBillsForMonth(
+        user.uid,
+        selectedMonth,
+        selectedYear,
+        activeCards
+      );
+      setCreditCardBills(bills);
+    } catch (error) {
+      console.error('Erro ao carregar faturas:', error);
+    } finally {
+      setBillsLoading(false);
+    }
+  };
+  
+  // Recarregar faturas quando mudar mês/ano ou cartões
+  useEffect(() => {
+    loadCreditCardBills();
+  }, [user, selectedMonth, selectedYear, activeCards.length, filterAccountId]);
+  
+  // Recarregar faturas junto com transações
+  useEffect(() => {
+    if (refreshKey > 0) {
+      loadCreditCardBills();
+    }
+  }, [refreshKey]);
+  
   // Limpar filtro de conta
   const clearAccountFilter = () => {
     setFilterAccountId(undefined);
@@ -95,18 +145,21 @@ export default function Launches() {
   }, [refreshKey]);
 
   // Converte transações do Firebase para o formato do TransactionsList
+  // Filtra transações de cartão de crédito (elas aparecem apenas nas faturas)
   const listItems = useMemo(() => {
-    return transactions.map((t: Transaction) => ({
-      id: t.id,
-      date: t.date.toDate().toISOString().split('T')[0],
-      title: t.description,
-      account: t.accountName || t.creditCardName || '',
-      amount: t.type === 'expense' ? -t.amount : t.amount,
-      type: t.type === 'transfer' ? 'transfer' : (t.type === 'expense' ? 'paid' : 'received'),
-      category: t.categoryName,
-      categoryIcon: t.categoryIcon,
-      status: t.status,
-    }));
+    return transactions
+      .filter((t: Transaction) => !t.creditCardId) // Exclui transações de cartão
+      .map((t: Transaction) => ({
+        id: t.id,
+        date: t.date.toDate().toISOString().split('T')[0],
+        title: t.description,
+        account: t.accountName || '',
+        amount: t.type === 'expense' ? -t.amount : t.amount,
+        type: t.type === 'transfer' ? 'transfer' : (t.type === 'expense' ? 'paid' : 'received'),
+        category: t.categoryName,
+        categoryIcon: t.categoryIcon,
+        status: t.status,
+      }));
   }, [transactions]) as Array<{
     id: string;
     date: string;
@@ -174,6 +227,16 @@ export default function Launches() {
   const goToToday = () => {
     setSelectedMonth(today.getMonth() + 1);
     setSelectedYear(today.getFullYear());
+  };
+
+  // Handler para navegar para detalhes da fatura
+  const handleBillPress = (bill: CreditCardBillWithTransactions) => {
+    navigation.navigate('CreditCardBillDetails', {
+      creditCardId: bill.creditCardId,
+      creditCardName: bill.creditCardName,
+      month: bill.month,
+      year: bill.year,
+    });
   };
 
   // Handler para editar transação
@@ -363,7 +426,7 @@ export default function Launches() {
                 <View style={[styles.emptyCard, { backgroundColor: colors.card }, getShadow(colors)]}>
                   <Text style={[styles.emptyText, { color: colors.textMuted }]}>Carregando...</Text>
                 </View>
-              ) : listItems.length === 0 ? (
+              ) : listItems.length === 0 && creditCardBills.length === 0 ? (
                 <View style={[styles.emptyCard, { backgroundColor: colors.card }, getShadow(colors)]}>
                   <View style={[styles.emptyIcon, { backgroundColor: colors.primaryBg }]}>
                     <MaterialCommunityIcons 
@@ -383,16 +446,31 @@ export default function Launches() {
                 </View>
               ) : (
                 <View style={[styles.listCard, { backgroundColor: colors.card }, getShadow(colors)]}>
-                  <View style={styles.listHeader}>
-                    <Text style={[styles.listTitle, { color: colors.text }]}>
-                      {listItems.length} lançamento{listItems.length !== 1 ? 's' : ''}
-                    </Text>
-                  </View>
-                  <TransactionsList 
-                    items={listItems} 
-                    onEditItem={handleEditTransaction}
-                    onStatusPress={handleStatusPress}
-                  />
+                  {/* Faturas de Cartão de Crédito - integradas na lista */}
+                  {!filterAccountId && creditCardBills.length > 0 && (
+                    creditCardBills.map((bill) => (
+                      <CreditCardBillItem
+                        key={`bill-${bill.creditCardId}`}
+                        creditCardName={bill.creditCardName}
+                        creditCardIcon={bill.creditCard?.icon || 'credit-card'}
+                        creditCardColor={bill.creditCard?.color || '#3B82F6'}
+                        billMonth={bill.month}
+                        billYear={bill.year}
+                        totalAmount={bill.totalAmount}
+                        isPaid={bill.isPaid}
+                        onPress={() => handleBillPress(bill)}
+                      />
+                    ))
+                  )}
+                  
+                  {/* Lista de Transações */}
+                  {listItems.length > 0 && (
+                    <TransactionsList 
+                      items={listItems} 
+                      onEditItem={handleEditTransaction}
+                      onStatusPress={handleStatusPress}
+                    />
+                  )}
                 </View>
               )}
             </View>

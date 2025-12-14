@@ -31,11 +31,6 @@ export default function CreditCardsCard({ cards = [], totalBills = 0, onCardPres
   const { colors } = useAppTheme();
   const currentMonth = MONTHS[new Date().getMonth()];
 
-  // Calcular totais
-  const totalLimit = cards.reduce((sum, card) => sum + card.limit, 0);
-  const totalUsed = cards.reduce((sum, card) => sum + (card.currentUsed || 0), 0);
-  const availableLimit = totalLimit - totalUsed;
-
   // Componente de item do cartão
   const CardRow = ({ card }: { card: CreditCard }) => {
     const cardColor = getCardColor(card.name, card.color);
@@ -121,32 +116,6 @@ export default function CreditCardsCard({ cards = [], totalBills = 0, onCardPres
         </Pressable>
       </View>
 
-      {/* Resumo de limite */}
-      {cards.length > 0 && (
-        <View style={[styles.summaryRow, { borderColor: colors.border }]}>
-          <View style={styles.summaryItem}>
-            <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>Limite total</Text>
-            <Text style={[styles.summaryValue, { color: colors.text }]}>
-              {formatCurrencyBRL(totalLimit)}
-            </Text>
-          </View>
-          <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
-          <View style={styles.summaryItem}>
-            <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>Disponível</Text>
-            <Text style={[styles.summaryValue, { color: colors.income }]}>
-              {formatCurrencyBRL(availableLimit)}
-            </Text>
-          </View>
-          <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
-          <View style={styles.summaryItem}>
-            <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>Utilizado</Text>
-            <Text style={[styles.summaryValue, { color: colors.expense }]}>
-              {formatCurrencyBRL(totalUsed)}
-            </Text>
-          </View>
-        </View>
-      )}
-
       {/* Lista de cartões */}
       {cards.length > 0 ? (
         <View style={styles.cardsList}>
@@ -207,32 +176,6 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.sm,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    marginBottom: spacing.sm,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-  },
-  summaryItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  summaryDivider: {
-    width: 1,
-    height: 28,
-  },
-  summaryLabel: {
-    fontSize: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  summaryValue: {
-    fontSize: 13,
-    fontWeight: '600',
-    marginTop: 2,
   },
   cardsList: {
     gap: spacing.xs,

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet, Platform, ScrollView, Modal, Alert } from "react-native";
+import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Modal, Alert, Platform } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAppTheme } from "../contexts/themeContext";
 import { useAuth } from "../contexts/authContext";
@@ -8,35 +8,14 @@ import { useCreditCards } from "../hooks/useCreditCards";
 import { useAccounts } from "../hooks/useAccounts";
 import { CreditCard } from "../types/firebase";
 import { formatCurrencyBRL } from "../utils/format";
-import { createCreditCardAdjustment, deleteTransactionsByCreditCard, countTransactionsByCreditCard } from "../services/transactionService";
+import { deleteTransactionsByCreditCard, countTransactionsByCreditCard } from "../services/transactionService";
 import { updateCreditCard as updateCreditCardService } from "../services/creditCardService";
-
-interface CardBrandOption {
-  id: string;
-  name: string;
-  icon: string;
-  color: string;
-}
-
-const CARD_BRANDS: CardBrandOption[] = [
-  { id: 'nubank', name: 'Nubank', icon: 'credit-card', color: '#8B5CF6' },
-  { id: 'itau', name: 'Itaú', icon: 'credit-card', color: '#F97316' },
-  { id: 'bradesco', name: 'Bradesco', icon: 'credit-card', color: '#EF4444' },
-  { id: 'bb', name: 'Banco do Brasil', icon: 'credit-card', color: '#FBBF24' },
-  { id: 'caixa', name: 'Caixa', icon: 'credit-card', color: '#3B82F6' },
-  { id: 'santander', name: 'Santander', icon: 'credit-card', color: '#EF4444' },
-  { id: 'inter', name: 'Inter', icon: 'credit-card', color: '#F97316' },
-  { id: 'c6', name: 'C6 Bank', icon: 'credit-card', color: '#1A1A1A' },
-  { id: 'picpay', name: 'PicPay', icon: 'credit-card', color: '#21C25E' },
-  { id: 'outro', name: 'Outro', icon: 'credit-card-outline', color: '#6B7280' },
-];
 
 export default function CreditCards({ navigation }: any) {
   const { colors } = useAppTheme();
   const { user } = useAuth();
   
   const [name, setName] = useState('');
-  const [selectedBrand, setSelectedBrand] = useState<string>('nubank');
   const [limit, setLimit] = useState('');
   const [closingDay, setClosingDay] = useState('');
   const [dueDay, setDueDay] = useState('');
@@ -49,9 +28,7 @@ export default function CreditCards({ navigation }: any) {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingCard, setEditingCard] = useState<CreditCard | null>(null);
   const [editName, setEditName] = useState('');
-  const [editBrand, setEditBrand] = useState('nubank');
   const [editLimit, setEditLimit] = useState('');
-  const [editCurrentUsed, setEditCurrentUsed] = useState('');
   const [editClosingDay, setEditClosingDay] = useState('');
   const [editDueDay, setEditDueDay] = useState('');
   const [editAccountId, setEditAccountId] = useState('');
@@ -111,8 +88,8 @@ export default function CreditCards({ navigation }: any) {
     try {
       const cardData: any = {
         name: name.trim(),
-        brand: selectedBrand,
-        color: CARD_BRANDS.find(b => b.id === selectedBrand)?.color || '#6B7280',
+        icon: 'credit-card',
+        color: '#3B82F6',
         limit: parseValue(limit),
         closingDay: closingDayNum,
         dueDay: dueDayNum,
@@ -133,7 +110,6 @@ export default function CreditCards({ navigation }: any) {
         setDueDay('');
         setSelectedAccountId('');
         setSelectedAccountName('');
-        setSelectedBrand('nubank');
         Alert.alert('Sucesso', 'Cartão cadastrado com sucesso!');
       } else {
         Alert.alert('Erro', 'Não foi possível cadastrar o cartão');
@@ -170,9 +146,7 @@ export default function CreditCards({ navigation }: any) {
     const account = activeAccounts.find(a => a.id === card.paymentAccountId);
     setEditingCard(card);
     setEditName(card.name);
-    setEditBrand(card.brand || 'outro');
     setEditLimit(card.limit.toString().replace('.', ','));
-    setEditCurrentUsed((card.currentUsed || 0).toString().replace('.', ','));
     setEditClosingDay(card.closingDay.toString());
     setEditDueDay(card.dueDay.toString());
     setEditAccountId(card.paymentAccountId || '');
@@ -194,27 +168,9 @@ export default function CreditCards({ navigation }: any) {
 
     setSaving(true);
     try {
-      const newCurrentUsed = parseValue(editCurrentUsed);
-      const oldCurrentUsed = editingCard.currentUsed || 0;
-      const usedChanged = newCurrentUsed !== oldCurrentUsed;
-
-      // Se o valor usado mudou, criar transação de ajuste
-      if (usedChanged) {
-        await createCreditCardAdjustment(
-          user.uid,
-          editingCard.id,
-          editName.trim(),
-          oldCurrentUsed,
-          newCurrentUsed
-        );
-      }
-
       const updateData: any = {
         name: editName.trim(),
-        brand: editBrand,
-        color: CARD_BRANDS.find(b => b.id === editBrand)?.color || '#6B7280',
         limit: parseValue(editLimit),
-        currentUsed: newCurrentUsed,
         closingDay: closingDayNum,
         dueDay: dueDayNum,
       };
@@ -231,16 +187,7 @@ export default function CreditCards({ navigation }: any) {
       if (result) {
         setEditModalVisible(false);
         setEditingCard(null);
-        
-        if (usedChanged) {
-          const diff = newCurrentUsed - oldCurrentUsed;
-          Alert.alert(
-            'Cartão atualizado', 
-            `Ajuste de fatura registrado: ${diff >= 0 ? '+' : ''}${formatCurrencyBRL(diff)}`
-          );
-        } else {
-          Alert.alert('Sucesso', 'Cartão atualizado com sucesso!');
-        }
+        Alert.alert('Sucesso', 'Cartão atualizado com sucesso!');
       } else {
         Alert.alert('Erro', 'Não foi possível atualizar o cartão');
       }
@@ -283,9 +230,6 @@ export default function CreditCards({ navigation }: any) {
               
               // Zerar o valor usado do cartão
               await updateCreditCardService(editingCard.id, { currentUsed: 0 });
-              
-              // Atualizar estado local
-              setEditCurrentUsed('0');
               
               Alert.alert(
                 'Cartão resetado', 
@@ -358,8 +302,6 @@ export default function CreditCards({ navigation }: any) {
     );
   }
 
-  const selectedBrandData = CARD_BRANDS.find(b => b.id === selectedBrand);
-
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
       {/* Header */}
@@ -413,8 +355,7 @@ export default function CreditCards({ navigation }: any) {
             </Text>
             <View style={[styles.card, { backgroundColor: colors.card }, getShadow(colors)]}>
               {activeCards.map((card, index) => {
-                const brand = CARD_BRANDS.find(b => b.id === card.brand);
-                const cardColor = card.color || brand?.color || colors.primary;
+                const cardColor = card.color || colors.primary;
                 const available = card.limit - (card.currentUsed || 0);
                 return (
                   <Pressable
@@ -430,7 +371,7 @@ export default function CreditCards({ navigation }: any) {
                   >
                     <View style={[styles.iconCircle, { backgroundColor: cardColor + '20' }]}>
                       <MaterialCommunityIcons 
-                        name={(brand?.icon || 'credit-card') as any}
+                        name="credit-card"
                         size={20} 
                         color={cardColor} 
                       />
@@ -490,41 +431,6 @@ export default function CreditCards({ navigation }: any) {
                   style={[styles.input, { color: colors.text }]}
                 />
               </View>
-            </View>
-
-            {/* Bandeira/Banco */}
-            <View style={styles.formGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>Banco/Bandeira</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={styles.brandGrid}>
-                  {CARD_BRANDS.map((brand) => (
-                    <Pressable
-                      key={brand.id}
-                      onPress={() => setSelectedBrand(brand.id)}
-                      style={[
-                        styles.brandOption,
-                        { borderColor: selectedBrand === brand.id ? brand.color : colors.border },
-                        selectedBrand === brand.id && { backgroundColor: brand.color + '15' },
-                      ]}
-                    >
-                      <MaterialCommunityIcons 
-                        name={brand.icon as any} 
-                        size={24} 
-                        color={selectedBrand === brand.id ? brand.color : colors.textMuted} 
-                      />
-                      <Text 
-                        style={[
-                          styles.brandLabel, 
-                          { color: selectedBrand === brand.id ? brand.color : colors.textMuted },
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {brand.name}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </ScrollView>
             </View>
 
             {/* Limite */}
@@ -598,7 +504,7 @@ export default function CreditCards({ navigation }: any) {
               disabled={saving || !name.trim()}
               style={({ pressed }) => [
                 styles.createButton,
-                { backgroundColor: selectedBrandData?.color || colors.primary },
+                { backgroundColor: colors.primary },
                 pressed && { opacity: 0.9 },
                 (saving || !name.trim()) && { opacity: 0.6 },
               ]}
@@ -691,75 +597,21 @@ export default function CreditCards({ navigation }: any) {
                 </View>
               </View>
 
-              {/* Banco/Bandeira */}
+              {/* Limite */}
               <View style={styles.formGroup}>
-                <Text style={[styles.label, { color: colors.text }]}>Banco/Bandeira</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <View style={styles.brandGrid}>
-                    {CARD_BRANDS.map((brand) => (
-                      <Pressable
-                        key={brand.id}
-                        onPress={() => setEditBrand(brand.id)}
-                        style={[
-                          styles.brandOptionSmall,
-                          { borderColor: editBrand === brand.id ? brand.color : colors.border },
-                          editBrand === brand.id && { backgroundColor: brand.color + '15' },
-                        ]}
-                      >
-                        <MaterialCommunityIcons 
-                          name={brand.icon as any} 
-                          size={18} 
-                          color={editBrand === brand.id ? brand.color : colors.textMuted} 
-                        />
-                        <Text 
-                          style={[
-                            styles.brandLabelSmall, 
-                            { color: editBrand === brand.id ? brand.color : colors.textMuted },
-                          ]}
-                          numberOfLines={1}
-                        >
-                          {brand.name}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                </ScrollView>
-              </View>
-
-              {/* Limite e Usado */}
-              <View style={styles.rowFormGroup}>
-                <View style={[styles.formGroup, { flex: 1 }]}>
-                  <Text style={[styles.label, { color: colors.text }]}>Limite</Text>
-                  <View style={[styles.inputContainer, { borderColor: colors.border }]}>
-                    <Text style={[styles.currency, { color: colors.textMuted }]}>R$</Text>
-                    <TextInput
-                      value={editLimit}
-                      onChangeText={setEditLimit}
-                      placeholder="0,00"
-                      placeholderTextColor={colors.textMuted}
-                      keyboardType="numeric"
-                      style={[styles.input, { color: colors.text }]}
-                    />
-                  </View>
-                </View>
-                <View style={[styles.formGroup, { flex: 1 }]}>
-                  <Text style={[styles.label, { color: colors.text }]}>Usado</Text>
-                  <View style={[styles.inputContainer, { borderColor: colors.border }]}>
-                    <Text style={[styles.currency, { color: colors.textMuted }]}>R$</Text>
-                    <TextInput
-                      value={editCurrentUsed}
-                      onChangeText={setEditCurrentUsed}
-                      placeholder="0,00"
-                      placeholderTextColor={colors.textMuted}
-                      keyboardType="numeric"
-                      style={[styles.input, { color: colors.text }]}
-                    />
-                  </View>
+                <Text style={[styles.label, { color: colors.text }]}>Limite</Text>
+                <View style={[styles.inputContainer, { borderColor: colors.border }]}>
+                  <Text style={[styles.currency, { color: colors.textMuted }]}>R$</Text>
+                  <TextInput
+                    value={editLimit}
+                    onChangeText={setEditLimit}
+                    placeholder="0,00"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="numeric"
+                    style={[styles.input, { color: colors.text }]}
+                  />
                 </View>
               </View>
-              <Text style={[styles.helpText, { color: colors.textMuted, marginHorizontal: spacing.md }]}>
-                Ajuste o valor usado se precisar corrigir
-              </Text>
 
               {/* Datas */}
               <View style={styles.rowFormGroup}>
