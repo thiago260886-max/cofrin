@@ -552,3 +552,111 @@ export async function getCarryOverBalance(
 
   return carryOver;
 }
+
+// ==========================================
+// AJUSTE DE SALDO
+// ==========================================
+
+// Criar transação de ajuste de saldo
+export async function createBalanceAdjustment(
+  userId: string,
+  accountId: string,
+  accountName: string,
+  oldBalance: number,
+  newBalance: number
+): Promise<Transaction | null> {
+  const difference = newBalance - oldBalance;
+  
+  if (difference === 0) return null; // Sem mudança
+  
+  const now = Timestamp.now();
+  const currentDate = new Date();
+  const month = currentDate.getMonth() + 1;
+  const year = currentDate.getFullYear();
+
+  const adjustmentType: TransactionType = difference > 0 ? 'income' : 'expense';
+  const amount = Math.abs(difference);
+
+  const docRef = await addDoc(transactionsRef, {
+    userId,
+    type: adjustmentType,
+    amount,
+    description: `Ajuste de saldo${difference > 0 ? ' (crédito)' : ' (débito)'}`,
+    date: now,
+    month,
+    year,
+    accountId,
+    accountName,
+    recurrence: 'none',
+    status: 'completed',
+    isAdjustment: true, // Marca como ajuste de saldo
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  return {
+    id: docRef.id,
+    userId,
+    type: adjustmentType,
+    amount,
+    description: `Ajuste de saldo${difference > 0 ? ' (crédito)' : ' (débito)'}`,
+    date: now,
+    month,
+    year,
+    accountId,
+    accountName,
+    recurrence: 'none',
+    status: 'completed',
+    createdAt: now,
+    updatedAt: now,
+  } as Transaction;
+}
+
+// ==========================================
+// DELETAR TRANSAÇÕES POR CONTA
+// ==========================================
+
+// Deletar todas as transações de uma conta específica
+export async function deleteTransactionsByAccount(
+  userId: string,
+  accountId: string
+): Promise<{ deleted: number; error?: string }> {
+  try {
+    // Buscar todas as transações da conta
+    const q = query(
+      transactionsRef,
+      where('userId', '==', userId),
+      where('accountId', '==', accountId)
+    );
+
+    const snapshot = await getDocs(q);
+    
+    if (snapshot.empty) {
+      return { deleted: 0 };
+    }
+
+    // Deletar cada transação
+    const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+    await Promise.all(deletePromises);
+
+    return { deleted: snapshot.docs.length };
+  } catch (error) {
+    console.error('Erro ao deletar transações da conta:', error);
+    return { deleted: 0, error: 'Erro ao deletar transações' };
+  }
+}
+
+// Contar transações de uma conta
+export async function countTransactionsByAccount(
+  userId: string,
+  accountId: string
+): Promise<number> {
+  const q = query(
+    transactionsRef,
+    where('userId', '==', userId),
+    where('accountId', '==', accountId)
+  );
+
+  const snapshot = await getDocs(q);
+  return snapshot.docs.length;
+}

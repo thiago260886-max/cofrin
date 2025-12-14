@@ -2,10 +2,13 @@ import { useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, Platform, ScrollView, Alert, Modal } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAppTheme } from "../contexts/themeContext";
+import { useAuth } from "../contexts/authContext";
 import { spacing, borderRadius, getShadow } from "../theme";
 import { useAccounts } from "../hooks/useAccounts";
 import { AccountType, ACCOUNT_TYPE_LABELS, Account } from "../types/firebase";
 import { formatCurrencyBRL } from "../utils/format";
+import { createBalanceAdjustment, deleteTransactionsByAccount, countTransactionsByAccount } from "../services/transactionService";
+import { setAccountBalance } from "../services/accountService";
 
 interface AccountTypeOption {
   id: AccountType;
@@ -27,6 +30,7 @@ const ACCOUNT_ICONS = [
 
 export default function ConfigureAccounts({ navigation }: any) {
   const { colors } = useAppTheme();
+  const { user } = useAuth();
   
   const [name, setName] = useState('');
   const [selectedType, setSelectedType] = useState<AccountType>('checking');
@@ -107,11 +111,24 @@ export default function ConfigureAccounts({ navigation }: any) {
 
   // Salvar edição
   async function handleSaveEdit() {
-    if (!editingAccount || !editName.trim()) return;
+    if (!editingAccount || !editName.trim() || !user?.uid) return;
 
     setSaving(true);
     try {
       const newBalance = parseBalance(editBalance);
+      const oldBalance = editingAccount.balance;
+      const balanceChanged = newBalance !== oldBalance;
+      
+      // Se o saldo mudou, criar transação de ajuste
+      if (balanceChanged) {
+        await createBalanceAdjustment(
+          user.uid,
+          editingAccount.id,
+          editName.trim(),
+          oldBalance,
+          newBalance
+        );
+      }
       
       const result = await updateAccount(editingAccount.id, {
         name: editName.trim(),
@@ -124,7 +141,16 @@ export default function ConfigureAccounts({ navigation }: any) {
       if (result) {
         setEditModalVisible(false);
         setEditingAccount(null);
-        Alert.alert('Sucesso', 'Conta atualizada com sucesso!');
+        
+        if (balanceChanged) {
+          const diff = newBalance - oldBalance;
+          Alert.alert(
+            'Conta atualizada', 
+            `Ajuste de saldo registrado: ${diff >= 0 ? '+' : ''}${formatCurrencyBRL(diff)}`
+          );
+        } else {
+          Alert.alert('Sucesso', 'Conta atualizada com sucesso!');
+        }
       } else {
         Alert.alert('Erro', 'Não foi possível atualizar a conta');
       }
@@ -133,6 +159,62 @@ export default function ConfigureAccounts({ navigation }: any) {
     } finally {
       setSaving(false);
     }
+  }
+
+  // Resetar conta (deletar todas as transações)
+  async function handleResetAccount() {
+    if (!editingAccount || !user?.uid) return;
+    
+    // Primeiro, contar quantas transações existem
+    const count = await countTransactionsByAccount(user.uid, editingAccount.id);
+    
+    if (count === 0) {
+      Alert.alert('Aviso', 'Esta conta não possui lançamentos para excluir.');
+      return;
+    }
+    
+    Alert.alert(
+      'Resetar conta?',
+      `Esta ação irá excluir ${count} lançamento${count > 1 ? 's' : ''} desta conta e zerar o saldo. Esta ação NÃO pode ser desfeita!`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { 
+          text: 'Resetar', 
+          style: 'destructive',
+          onPress: async () => {
+            setSaving(true);
+            try {
+              // Deletar todas as transações
+              const { deleted, error } = await deleteTransactionsByAccount(user.uid, editingAccount.id);
+              
+              if (error) {
+                Alert.alert('Erro', error);
+                return;
+              }
+              
+              // Zerar o saldo da conta
+              await setAccountBalance(editingAccount.id, 0);
+              
+              // Atualizar estado local
+              setEditBalance('0');
+              
+              Alert.alert(
+                'Conta resetada', 
+                `${deleted} lançamento${deleted > 1 ? 's' : ''} excluído${deleted > 1 ? 's' : ''}. Saldo zerado.`
+              );
+              
+              // Fechar modal e atualizar lista
+              setEditModalVisible(false);
+              setEditingAccount(null);
+            } catch (err) {
+              Alert.alert('Erro', 'Ocorreu um erro ao resetar a conta');
+            } finally {
+              setSaving(false);
+            }
+          }
+        },
+      ]
+    );
   }
 
   // Arquivar conta do modal
@@ -598,31 +680,52 @@ export default function ConfigureAccounts({ navigation }: any) {
               </Pressable>
 
               {/* Ações */}
-              <View style={styles.modalActions}>
+              <View style={styles.modalActionsColumn}>
+                {/* Botão de Resetar */}
                 <Pressable
-                  onPress={handleArchiveFromModal}
+                  onPress={handleResetAccount}
                   style={({ pressed }) => [
-                    styles.actionButton,
-                    { backgroundColor: colors.bg, borderColor: colors.border },
+                    styles.resetButton,
+                    { backgroundColor: colors.warning + '15', borderColor: colors.warning },
                     pressed && { opacity: 0.7 },
                   ]}
                 >
-                  <MaterialCommunityIcons name="archive-outline" size={20} color={colors.textMuted} />
-                  <Text style={[styles.actionButtonText, { color: colors.text }]}>Arquivar</Text>
+                  <MaterialCommunityIcons name="refresh" size={20} color={colors.warning} />
+                  <View style={styles.resetButtonText}>
+                    <Text style={[styles.actionButtonText, { color: colors.warning }]}>Resetar conta</Text>
+                    <Text style={[styles.resetHint, { color: colors.textMuted }]}>
+                      Exclui todos os lançamentos e zera o saldo
+                    </Text>
+                  </View>
                 </Pressable>
 
-                <Pressable
-                  onPress={handleDeleteFromModal}
-                  style={({ pressed }) => [
-                    styles.actionButton,
-                    styles.deleteButton,
-                    { borderColor: colors.expense },
-                    pressed && { opacity: 0.7 },
-                  ]}
-                >
-                  <MaterialCommunityIcons name="delete-outline" size={20} color={colors.expense} />
-                  <Text style={[styles.actionButtonText, { color: colors.expense }]}>Excluir</Text>
-                </Pressable>
+                {/* Botões de Arquivar e Excluir */}
+                <View style={styles.modalActions}>
+                  <Pressable
+                    onPress={handleArchiveFromModal}
+                    style={({ pressed }) => [
+                      styles.actionButton,
+                      { backgroundColor: colors.bg, borderColor: colors.border },
+                      pressed && { opacity: 0.7 },
+                    ]}
+                  >
+                    <MaterialCommunityIcons name="archive-outline" size={20} color={colors.textMuted} />
+                    <Text style={[styles.actionButtonText, { color: colors.text }]}>Arquivar</Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={handleDeleteFromModal}
+                    style={({ pressed }) => [
+                      styles.actionButton,
+                      styles.deleteButton,
+                      { borderColor: colors.expense },
+                      pressed && { opacity: 0.7 },
+                    ]}
+                  >
+                    <MaterialCommunityIcons name="delete-outline" size={20} color={colors.expense} />
+                    <Text style={[styles.actionButtonText, { color: colors.expense }]}>Excluir</Text>
+                  </Pressable>
+                </View>
               </View>
             </ScrollView>
           </View>
@@ -885,10 +988,29 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     paddingTop: 0,
   },
+  modalActionsColumn: {
+    paddingVertical: spacing.md,
+    gap: spacing.sm,
+  },
   modalActions: {
     flexDirection: 'row',
     gap: spacing.sm,
-    paddingVertical: spacing.lg,
+  },
+  resetButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    gap: spacing.sm,
+  },
+  resetButtonText: {
+    flex: 1,
+  },
+  resetHint: {
+    fontSize: 11,
+    marginTop: 2,
   },
   actionButton: {
     flex: 1,
