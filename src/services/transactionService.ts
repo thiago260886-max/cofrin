@@ -113,6 +113,7 @@ export async function createTransaction(
   if (data.tags && data.tags.length > 0) transactionData.tags = data.tags;
   if (data.recurrenceEndDate) transactionData.recurrenceEndDate = data.recurrenceEndDate;
   if (data.parentTransactionId) transactionData.parentTransactionId = data.parentTransactionId;
+  if (data.seriesId) transactionData.seriesId = data.seriesId;
 
   const docRef = await addDoc(transactionsRef, transactionData);
 
@@ -398,6 +399,46 @@ export async function deleteTransaction(transaction: Transaction): Promise<void>
   // Deletar transação
   const docRef = doc(db, COLLECTIONS.TRANSACTIONS, transaction.id);
   await deleteDoc(docRef);
+}
+
+// Buscar transações por seriesId
+export async function getTransactionsBySeries(
+  userId: string,
+  seriesId: string
+): Promise<Transaction[]> {
+  const q = query(
+    transactionsRef,
+    where('userId', '==', userId),
+    where('seriesId', '==', seriesId)
+  );
+
+  const snapshot = await getDocs(q);
+  const transactions = snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+  })) as Transaction[];
+  
+  return transactions.sort((a, b) => a.date.toMillis() - b.date.toMillis());
+}
+
+// Deletar todas as transações de uma série
+export async function deleteTransactionSeries(
+  userId: string,
+  seriesId: string
+): Promise<number> {
+  const transactions = await getTransactionsBySeries(userId, seriesId);
+  let deletedCount = 0;
+
+  for (const transaction of transactions) {
+    try {
+      await deleteTransaction(transaction);
+      deletedCount++;
+    } catch (error) {
+      console.error(`Erro ao deletar transação ${transaction.id}:`, error);
+    }
+  }
+
+  return deletedCount;
 }
 
 // ==========================================

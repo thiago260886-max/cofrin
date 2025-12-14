@@ -39,7 +39,8 @@ export default function Launches() {
     balance,
     loading, 
     refresh,
-    deleteTransaction 
+    deleteTransaction,
+    deleteTransactionSeries 
   } = useTransactions({ 
     month: selectedMonth, 
     year: selectedYear 
@@ -120,6 +121,7 @@ export default function Launches() {
       creditCardId: originalTransaction.creditCardId,
       creditCardName: originalTransaction.creditCardName,
       recurrence: originalTransaction.recurrence,
+      seriesId: originalTransaction.seriesId,
     };
 
     setEditingTransaction(editData);
@@ -135,6 +137,19 @@ export default function Launches() {
       triggerRefresh();
     } else {
       Alert.alert('Erro', 'Não foi possível excluir o lançamento');
+    }
+  };
+
+  // Handler para deletar série de transações recorrentes
+  const handleDeleteSeries = async (seriesId: string) => {
+    const count = await deleteTransactionSeries(seriesId);
+    if (count > 0) {
+      setEditModalVisible(false);
+      setEditingTransaction(null);
+      triggerRefresh();
+      Alert.alert('Sucesso', `${count} lançamento(s) excluído(s)`);
+    } else {
+      Alert.alert('Erro', 'Não foi possível excluir a série de lançamentos');
     }
   };
 
@@ -295,6 +310,7 @@ export default function Launches() {
         }}
         onSave={handleEditSave}
         onDelete={handleDeleteTransaction}
+        onDeleteSeries={handleDeleteSeries}
         editTransaction={editingTransaction}
       />
     </MainLayout>

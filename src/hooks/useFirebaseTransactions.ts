@@ -145,6 +145,22 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
     }
   };
 
+  // Deletar série de transações
+  const deleteTransactionSeries = async (seriesId: string): Promise<number> => {
+    if (!user?.uid) return 0;
+    
+    try {
+      const deletedCount = await transactionService.deleteTransactionSeries(user.uid, seriesId);
+      // Remover todas do estado local que tenham o mesmo seriesId
+      setTransactions(prev => prev.filter(t => t.seriesId !== seriesId));
+      return deletedCount;
+    } catch (err) {
+      console.error('Erro ao deletar série:', err);
+      setError('Erro ao deletar série de transações');
+      return 0;
+    }
+  };
+
   // Filtrar por tipo
   const incomeTransactions = transactions.filter(t => t.type === 'income');
   const expenseTransactions = transactions.filter(t => t.type === 'expense');
@@ -175,6 +191,7 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
     createTransaction,
     updateTransaction,
     deleteTransaction,
+    deleteTransactionSeries,
   };
 }
 

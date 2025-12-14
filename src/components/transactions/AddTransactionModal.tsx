@@ -26,7 +26,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // Types
 type LocalTransactionType = 'despesa' | 'receita' | 'transfer';
-type PickerType = 'none' | 'category' | 'account' | 'toAccount' | 'creditCard' | 'recurrence' | 'date';
+type PickerType = 'none' | 'category' | 'account' | 'toAccount' | 'creditCard' | 'recurrence' | 'repetitions' | 'date';
 
 export interface EditableTransaction {
   id: string;
@@ -43,6 +43,7 @@ export interface EditableTransaction {
   creditCardId?: string;
   creditCardName?: string;
   recurrence?: RecurrenceType;
+  seriesId?: string; // ID da série para transações recorrentes
 }
 
 interface Props {
@@ -50,6 +51,7 @@ interface Props {
   onClose: () => void;
   onSave?: () => void;
   onDelete?: (id: string) => void;
+  onDeleteSeries?: (seriesId: string) => void;
   initialType?: LocalTransactionType;
   editTransaction?: EditableTransaction | null;
 }
@@ -58,10 +60,16 @@ interface Props {
 const RECURRENCE_OPTIONS: { label: string; value: RecurrenceType }[] = [
   { label: 'Não repetir', value: 'none' },
   { label: 'Semanal', value: 'weekly' },
-  { label: 'Quinzenal', value: 'weekly' }, // TODO: Implementar quinzenal
+  { label: 'Quinzenal', value: 'biweekly' },
   { label: 'Mensal', value: 'monthly' },
   { label: 'Anual', value: 'yearly' },
 ];
+
+// Opções de número de repetições (1-72)
+const REPETITION_OPTIONS = Array.from({ length: 72 }, (_, i) => ({
+  label: `${i + 1}x`,
+  value: i + 1,
+}));
 
 const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
@@ -101,6 +109,7 @@ export default function AddTransactionModal({
   onClose,
   onSave,
   onDelete,
+  onDeleteSeries,
   initialType = 'despesa',
   editTransaction,
 }: Props) {
@@ -137,6 +146,7 @@ export default function AddTransactionModal({
   
   const [date, setDate] = useState(new Date());
   const [recurrence, setRecurrence] = useState<RecurrenceType>('none');
+  const [repetitions, setRepetitions] = useState(1); // Número de repetições (1-72)
   const [saving, setSaving] = useState(false);
 
   // Single picker state - evita modais aninhados
@@ -186,6 +196,7 @@ export default function AddTransactionModal({
         setDescription(editTransaction.description || '');
         setDate(editTransaction.date);
         setRecurrence(editTransaction.recurrence || 'none');
+        setRepetitions(1); // Em edição, não alteramos repetições
         
         // Category
         if (editTransaction.categoryId) {
@@ -216,6 +227,7 @@ export default function AddTransactionModal({
         setDescription('');
         setDate(new Date());
         setRecurrence('none');
+        setRepetitions(1);
         setUseCreditCard(false);
         setCreditCardId('');
         setCreditCardName('');
@@ -306,42 +318,96 @@ export default function AddTransactionModal({
         type === 'despesa' ? 'expense' : 
         type === 'receita' ? 'income' : 'transfer';
 
-      // Build transaction data without undefined fields
-      const transactionData: CreateTransactionInput = {
-        type: firebaseType,
-        amount: parsed,
-        description: description.trim() || categoryName,
-        date: Timestamp.fromDate(date),
-        accountId: useCreditCard && type === 'despesa' ? '' : accountId,
-        recurrence,
-        status: 'completed',
+      // Função para calcular próxima data baseado na recorrência
+      const getNextDate = (baseDate: Date, occurrence: number): Date => {
+        const newDate = new Date(baseDate);
+        switch (recurrence) {
+          case 'weekly':
+            newDate.setDate(newDate.getDate() + (7 * occurrence));
+            break;
+          case 'biweekly':
+            newDate.setDate(newDate.getDate() + (14 * occurrence));
+            break;
+          case 'monthly':
+            newDate.setMonth(newDate.getMonth() + occurrence);
+            break;
+          case 'yearly':
+            newDate.setFullYear(newDate.getFullYear() + occurrence);
+            break;
+          default:
+            break;
+        }
+        return newDate;
       };
 
-      // Add optional fields only if they have values
-      if (type !== 'transfer' && categoryId) {
-        transactionData.categoryId = categoryId;
-      }
-      if (type === 'transfer' && toAccountId) {
-        transactionData.toAccountId = toAccountId;
-      }
-      if (useCreditCard && type === 'despesa' && creditCardId) {
-        transactionData.creditCardId = creditCardId;
-      }
+      // Gerar seriesId único para transações em série
+      const seriesId = recurrence !== 'none' && repetitions > 1 
+        ? `series_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        : undefined;
+
+      // Build base transaction data without undefined fields
+      const buildTransactionData = (transactionDate: Date): CreateTransactionInput => {
+        const data: CreateTransactionInput = {
+          type: firebaseType,
+          amount: parsed,
+          description: description.trim() || categoryName,
+          date: Timestamp.fromDate(transactionDate),
+          accountId: useCreditCard && type === 'despesa' ? '' : accountId,
+          recurrence,
+          status: 'completed',
+        };
+
+        // Add optional fields only if they have values
+        if (type !== 'transfer' && categoryId) {
+          data.categoryId = categoryId;
+        }
+        if (type === 'transfer' && toAccountId) {
+          data.toAccountId = toAccountId;
+        }
+        if (useCreditCard && type === 'despesa' && creditCardId) {
+          data.creditCardId = creditCardId;
+        }
+        // Add seriesId for recurring transactions
+        if (seriesId) {
+          data.seriesId = seriesId;
+        }
+
+        return data;
+      };
 
       let success = false;
       
       if (isEditMode && editTransaction) {
-        // Update existing transaction
+        // Update existing transaction (não cria repetições na edição)
+        const transactionData = buildTransactionData(date);
         success = await updateTransaction(editTransaction.id, transactionData);
         if (success) {
           Alert.alert('Sucesso', 'Lançamento atualizado!');
         }
       } else {
-        // Create new transaction
-        const result = await createTransaction(transactionData);
-        success = !!result;
+        // Create new transaction(s)
+        const totalToCreate = recurrence === 'none' ? 1 : repetitions;
+        let createdCount = 0;
+
+        for (let i = 0; i < totalToCreate; i++) {
+          const transactionDate = getNextDate(date, i);
+          const transactionData = buildTransactionData(transactionDate);
+          const result = await createTransaction(transactionData);
+          if (result) {
+            createdCount++;
+          }
+        }
+
+        success = createdCount === totalToCreate;
         if (success) {
-          Alert.alert('Sucesso', 'Lançamento salvo!');
+          if (totalToCreate > 1) {
+            Alert.alert('Sucesso', `${createdCount} lançamentos criados!`);
+          } else {
+            Alert.alert('Sucesso', 'Lançamento salvo!');
+          }
+        } else if (createdCount > 0) {
+          Alert.alert('Aviso', `Apenas ${createdCount} de ${totalToCreate} lançamentos foram criados.`);
+          success = true; // Considerar parcialmente bem sucedido
         }
       }
 
@@ -360,8 +426,8 @@ export default function AddTransactionModal({
   }, [
     type, amount, description, categoryId, categoryName,
     accountId, toAccountId, creditCardId, useCreditCard,
-    date, recurrence, createTransaction, updateTransaction, 
-    isEditMode, editTransaction, onSave, onClose
+    date, recurrence, repetitions, createTransaction, updateTransaction, 
+    isEditMode, editTransaction, onSave, onClose, activeAccounts
   ]);
 
   // Componente de campo selecionável
@@ -758,6 +824,10 @@ export default function AddTransactionModal({
                 key={option.value}
                 onPress={() => {
                   setRecurrence(option.value);
+                  // Se escolher "Não repetir", reseta repetições para 1
+                  if (option.value === 'none') {
+                    setRepetitions(1);
+                  }
                   setActivePicker('none');
                 }}
                 style={({ pressed }) => [
@@ -776,6 +846,49 @@ export default function AddTransactionModal({
                   {option.label}
                 </Text>
                 {recurrence === option.value && (
+                  <MaterialCommunityIcons name="check" size={20} color={colors.primary} />
+                )}
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      );
+    }
+
+    // Render repetitions picker
+    if (activePicker === 'repetitions') {
+      return (
+        <View style={[styles.pickerContainer, { backgroundColor: colors.card }]}>
+          <View style={[styles.pickerHeader, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.pickerTitle, { color: colors.text }]}>Quantas vezes repetir?</Text>
+            <Pressable onPress={() => setActivePicker('none')} hitSlop={12}>
+              <MaterialCommunityIcons name="close" size={24} color={colors.textMuted} />
+            </Pressable>
+          </View>
+          <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>
+            {REPETITION_OPTIONS.map((option) => (
+              <Pressable
+                key={option.value}
+                onPress={() => {
+                  setRepetitions(option.value);
+                  setActivePicker('none');
+                }}
+                style={({ pressed }) => [
+                  styles.pickerOption,
+                  { backgroundColor: pressed ? colors.grayLight : 'transparent' },
+                  repetitions === option.value && { backgroundColor: colors.primaryBg },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.pickerOptionText,
+                    { color: colors.text },
+                    repetitions === option.value && { color: colors.primary, fontWeight: '600' },
+                  ]}
+                >
+                  {option.label}
+                </Text>
+                {repetitions === option.value && (
                   <MaterialCommunityIcons name="check" size={20} color={colors.primary} />
                 )}
               </Pressable>
@@ -948,6 +1061,19 @@ export default function AddTransactionModal({
                     icon="repeat"
                     onPress={() => setActivePicker('recurrence')}
                   />
+
+                  {/* Número de repetições - só aparece se recorrência != none */}
+                  {recurrence !== 'none' && (
+                    <>
+                      <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                      <SelectField
+                        label="Quantas vezes?"
+                        value={`${repetitions}x`}
+                        icon="counter"
+                        onPress={() => setActivePicker('repetitions')}
+                      />
+                    </>
+                  )}
                 </View>
               </ScrollView>
 
@@ -957,21 +1083,48 @@ export default function AddTransactionModal({
                 {isEditMode && onDelete && editTransaction && (
                   <Pressable
                     onPress={() => {
-                      Alert.alert(
-                        'Excluir lançamento',
-                        'Tem certeza que deseja excluir este lançamento?',
-                        [
-                          { text: 'Cancelar', style: 'cancel' },
-                          { 
-                            text: 'Excluir', 
-                            style: 'destructive',
-                            onPress: () => {
-                              onDelete(editTransaction.id);
-                              onClose();
-                            }
-                          },
-                        ]
-                      );
+                      // Verificar se faz parte de uma série
+                      if (editTransaction.seriesId && onDeleteSeries) {
+                        Alert.alert(
+                          'Excluir lançamento',
+                          'Este lançamento faz parte de uma série. O que deseja fazer?',
+                          [
+                            { text: 'Cancelar', style: 'cancel' },
+                            { 
+                              text: 'Excluir apenas este', 
+                              onPress: () => {
+                                onDelete(editTransaction.id);
+                                onClose();
+                              }
+                            },
+                            { 
+                              text: 'Excluir toda a série', 
+                              style: 'destructive',
+                              onPress: () => {
+                                onDeleteSeries(editTransaction.seriesId!);
+                                onClose();
+                              }
+                            },
+                          ]
+                        );
+                      } else {
+                        // Transação única - confirmar normalmente
+                        Alert.alert(
+                          'Excluir lançamento',
+                          'Tem certeza que deseja excluir este lançamento?',
+                          [
+                            { text: 'Cancelar', style: 'cancel' },
+                            { 
+                              text: 'Excluir', 
+                              style: 'destructive',
+                              onPress: () => {
+                                onDelete(editTransaction.id);
+                                onClose();
+                              }
+                            },
+                          ]
+                        );
+                      }
                     }}
                     style={({ pressed }) => [
                       styles.deleteButton,

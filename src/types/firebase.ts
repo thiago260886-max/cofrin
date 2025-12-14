@@ -89,7 +89,7 @@ export type UpdateCreditCardInput = Partial<CreateCreditCardInput>;
 // ==========================================
 
 export type TransactionType = 'expense' | 'income' | 'transfer';
-export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
+export type RecurrenceType = 'none' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly';
 export type TransactionStatus = 'pending' | 'completed' | 'cancelled';
 
 export interface Transaction extends BaseDocument {
@@ -119,6 +119,7 @@ export interface Transaction extends BaseDocument {
   recurrence: RecurrenceType;
   recurrenceEndDate?: Timestamp;
   parentTransactionId?: string; // Se é uma transação gerada por recorrência
+  seriesId?: string; // Identificador único da série de transações recorrentes
   
   // Status
   status: TransactionStatus;
