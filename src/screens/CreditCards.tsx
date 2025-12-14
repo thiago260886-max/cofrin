@@ -77,7 +77,20 @@ export default function CreditCards({ navigation }: any) {
       return;
     }
 
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      showAlert('Erro', 'Informe o nome do cartão', [{ text: 'OK', style: 'default' }]);
+      return;
+    }
+
+    if (!limit.trim() || parseValue(limit) <= 0) {
+      showAlert('Erro', 'Informe o limite do cartão', [{ text: 'OK', style: 'default' }]);
+      return;
+    }
+
+    if (!selectedAccountId) {
+      showAlert('Erro', 'Selecione a conta de pagamento da fatura', [{ text: 'OK', style: 'default' }]);
+      return;
+    }
     
     const closingDayNum = parseInt(closingDay) || 1;
     const dueDayNum = parseInt(dueDay) || 10;
@@ -96,13 +109,9 @@ export default function CreditCards({ navigation }: any) {
         limit: parseValue(limit),
         closingDay: closingDayNum,
         dueDay: dueDayNum,
+        paymentAccountId: selectedAccountId,
         isArchived: false,
       };
-      
-      // Só adiciona paymentAccountId se tiver valor
-      if (selectedAccountId) {
-        cardData.paymentAccountId = selectedAccountId;
-      }
 
       const result = await createCreditCard(cardData);
 
