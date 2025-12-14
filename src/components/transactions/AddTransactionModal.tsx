@@ -154,6 +154,15 @@ export default function AddTransactionModal({
   // Single picker state - evita modais aninhados
   const [activePicker, setActivePicker] = useState<PickerType>('none');
   
+  // Calcular valor por parcela
+  const installmentValue = React.useMemo(() => {
+    if (recurrence !== 'none' && repetitions > 1) {
+      const parsed = parseCurrency(amount);
+      return parsed / repetitions;
+    }
+    return 0;
+  }, [amount, repetitions, recurrence]);
+  
   // Date picker state for custom calendar
   const [tempDate, setTempDate] = useState(new Date());
 
@@ -414,7 +423,8 @@ export default function AddTransactionModal({
         success = createdCount === totalToCreate;
         if (success) {
           if (totalToCreate > 1) {
-            Alert.alert('Sucesso', `${createdCount} lançamentos criados!`);
+            const valuePerInstallment = formatCurrency(Math.round((parsed / totalToCreate) * 100).toString());
+            Alert.alert('Sucesso', `${createdCount} lançamentos criados!\n${totalToCreate}x de ${valuePerInstallment}`);
           } else {
             Alert.alert('Sucesso', 'Lançamento salvo!');
           }
@@ -1104,6 +1114,15 @@ export default function AddTransactionModal({
                           icon="counter"
                           onPress={() => setActivePicker('repetitions')}
                         />
+                        {/* Informação do valor por parcela */}
+                        {repetitions > 1 && installmentValue > 0 && (
+                          <View style={[styles.installmentInfo, { backgroundColor: colors.primaryBg }]}>
+                            <MaterialCommunityIcons name="information" size={16} color={colors.primary} />
+                            <Text style={[styles.installmentText, { color: colors.primary }]}>
+                              {repetitions}x de {formatCurrency(Math.round(installmentValue * 100).toString())}
+                            </Text>
+                          </View>
+                        )}
                       </>
                     )}
                   </View>
@@ -1505,6 +1524,21 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.full,
   },
   quickDateText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  installmentInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
+    marginBottom: spacing.md,
+    borderRadius: borderRadius.md,
+  },
+  installmentText: {
     fontSize: 14,
     fontWeight: '600',
   },
