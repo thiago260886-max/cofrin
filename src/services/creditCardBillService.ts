@@ -2,7 +2,7 @@
 // SERVIÇO DE FATURAS DE CARTÃO DE CRÉDITO
 // ==========================================
 
-import { collection, doc, addDoc, updateDoc, getDocs, query, where, Timestamp } from 'firebase/firestore';
+import { collection, doc, addDoc, updateDoc, getDocs, getDoc, query, where, Timestamp } from 'firebase/firestore';
 import { db, COLLECTIONS } from './firebase';
 import { CreditCardBill, Transaction, CreditCard } from '../types/firebase';
 import { updateAccountBalance } from './accountService';
@@ -282,6 +282,50 @@ export async function payBill(
   await updateCreditCard(creditCardId, {
     currentUsed: 0,
   });
+}
+
+// ==========================================
+// DESFAZER PAGAMENTO DE FATURA
+// ==========================================
+
+export async function unpayBill(
+  billId: string
+): Promise<void> {
+  const now = Timestamp.now();
+
+  const billDocRef = doc(billsRef, billId);
+  const snapshot = await getDoc(billDocRef);
+  if (!snapshot.exists()) {
+    throw new Error('Fatura não encontrada');
+  }
+
+  const billData = snapshot.data() as any;
+  const paidFromAccountId: string | undefined = billData.paidFromAccountId;
+  const creditCardId: string = billData.creditCardId;
+  const month: number = billData.month;
+  const year: number = billData.year;
+  const userId: string = billData.userId;
+  const amount: number = billData.totalAmount || 0;
+
+  if (!paidFromAccountId) {
+    throw new Error('Fatura não está marcada como paga ou não possui conta de pagamento');
+  }
+
+  // Atualizar fatura como não paga
+  await updateDoc(billDocRef, {
+    isPaid: false,
+    paidAt: null,
+    paidFromAccountId: null,
+    updatedAt: now,
+  });
+
+  // Reverter débito na conta (adicionar o valor de volta)
+  await updateAccountBalance(paidFromAccountId, amount);
+
+  // Recalcular uso do cartão com base nas transações da fatura e restaurar
+  const transactions = await getCreditCardTransactionsByMonth(userId, creditCardId, month, year);
+  const currentUsed = calculateBillTotal(transactions);
+  await updateCreditCard(creditCardId, { currentUsed });
 }
 
 // ==========================================

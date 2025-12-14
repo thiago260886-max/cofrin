@@ -118,7 +118,7 @@ export default function Launches() {
       if (filterAccountId) {
         const filtered = bills.filter((bill) => {
           if ((bill as any).paidFromAccountId && (bill as any).paidFromAccountId === filterAccountId) return true;
-          if (bill.transactions && bill.transactions.some((tx) => tx.accountId === filterAccountId)) return true;
+          if (bill.transactions && bill.transactions.some((tx) => tx.accountId === filterAccountId || tx.toAccountId === filterAccountId)) return true;
           return false;
         });
         setCreditCardBills(filtered);
@@ -466,7 +466,7 @@ export default function Launches() {
                   {creditCardBills.length > 0 && (
                     creditCardBills.map((bill) => (
                       <CreditCardBillItem
-                        key={`bill-${bill.creditCardId}`}
+                        key={`bill-${bill.creditCardId}-${bill.month}-${bill.year}`}
                         creditCardName={bill.creditCardName}
                         creditCardIcon={bill.creditCard?.icon || 'credit-card'}
                         creditCardColor={bill.creditCard?.color || '#3B82F6'}

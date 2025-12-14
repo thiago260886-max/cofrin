@@ -12,6 +12,7 @@ import { formatCurrencyBRL } from '../utils/format';
 import {
     getBillDetails,
     payBill,
+    unpayBill,
     getMonthName,
     CreditCardBillWithTransactions
 } from '../services/creditCardBillService';
@@ -37,6 +38,7 @@ export default function CreditCardBillDetails() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [paying, setPaying] = useState(false);
+  const [unpaying, setUnpaying] = useState(false);
   
   // Modal de seleção de conta para pagamento
   const [payModalVisible, setPayModalVisible] = useState(false);
@@ -192,6 +194,9 @@ export default function CreditCardBillDetails() {
             <MaterialCommunityIcons name="credit-card" size={32} color={colors.primary} />
             <View style={styles.billTitleContainer}>
               <Text style={[styles.billTitle, { color: colors.text }]}>{billTitle}</Text>
+              {bill?.dueDate && (
+                <Text style={[styles.dueDateText, { color: colors.textMuted }]}>Vencimento: {bill.dueDate.toDate().toLocaleDateString('pt-BR')}</Text>
+              )}
               {bill?.isPaid ? (
                 <View style={[styles.statusBadge, { backgroundColor: '#10b98120' }]}>
                   <MaterialCommunityIcons name="check-circle" size={14} color="#10b981" />
@@ -236,6 +241,43 @@ export default function CreditCardBillDetails() {
             >
               <MaterialCommunityIcons name="cash-check" size={20} color="#fff" />
               <Text style={styles.payButtonText}>Pagar Fatura</Text>
+            </Pressable>
+          )}
+          {/* Botão desfazer pagamento */}
+          {bill?.isPaid && (
+            <Pressable
+              style={[styles.unpayButton, { borderColor: colors.border }]}
+              onPress={() => {
+                Alert.alert(
+                  'Desfazer pagamento',
+                  'Tem certeza que deseja desfazer o pagamento desta fatura? O débito será estornado na conta usada.',
+                  [
+                    { text: 'Cancelar', style: 'cancel' },
+                    {
+                      text: 'Desfazer',
+                      onPress: async () => {
+                        setUnpaying(true);
+                        try {
+                          await unpayBill(bill.id);
+                          Alert.alert('Sucesso', 'Pagamento desfeito com sucesso');
+                          loadBillDetails();
+                        } catch (err) {
+                          console.error('Erro ao desfazer pagamento:', err);
+                          Alert.alert('Erro', 'Não foi possível desfazer o pagamento');
+                        } finally {
+                          setUnpaying(false);
+                        }
+                      }
+                    }
+                  ]
+                );
+              }}
+              disabled={unpaying}
+            >
+              <MaterialCommunityIcons name="undo" size={18} color={colors.text} />
+              <Text style={[styles.unpayButtonText, { color: colors.text }]}>
+                {unpaying ? 'Desfazendo...' : 'Desfazer pagamento'}
+              </Text>
             </Pressable>
           )}
         </View>
@@ -450,6 +492,24 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  unpayButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    marginTop: spacing.sm,
+    gap: spacing.sm,
+    borderWidth: 1,
+  },
+  unpayButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  dueDateText: {
+    fontSize: 13,
+    marginTop: 4,
   },
   sectionTitle: {
     fontSize: 16,
