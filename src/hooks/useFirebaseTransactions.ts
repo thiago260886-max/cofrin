@@ -48,8 +48,8 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
       let targetYear = year;
 
       if (accountId) {
-        // Buscar por conta
-        data = await transactionService.getTransactionsByAccount(user.uid, accountId);
+        // Buscar por conta (respeitando mês/ano quando informados)
+        data = await transactionService.getTransactionsByAccount(user.uid, accountId, month, year);
       } else if (creditCardId) {
         // Buscar por cartão de crédito
         data = await transactionService.getTransactionsByCreditCard(

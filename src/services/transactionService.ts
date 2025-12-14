@@ -257,21 +257,44 @@ export async function getTransactionsByType(
 // Buscar transações por conta
 export async function getTransactionsByAccount(
   userId: string,
-  accountId: string
+  accountId: string,
+  month?: number,
+  year?: number
 ): Promise<Transaction[]> {
   // Transações onde a conta é origem
-  const q1 = query(
-    transactionsRef,
-    where('userId', '==', userId),
-    where('accountId', '==', accountId)
-  );
+  let q1;
+  let q2;
 
-  // Transações onde a conta é destino (transferências)
-  const q2 = query(
-    transactionsRef,
-    where('userId', '==', userId),
-    where('toAccountId', '==', accountId)
-  );
+  if (month && year) {
+    q1 = query(
+      transactionsRef,
+      where('userId', '==', userId),
+      where('accountId', '==', accountId),
+      where('month', '==', month),
+      where('year', '==', year)
+    );
+
+    // Transações onde a conta é destino (transferências)
+    q2 = query(
+      transactionsRef,
+      where('userId', '==', userId),
+      where('toAccountId', '==', accountId),
+      where('month', '==', month),
+      where('year', '==', year)
+    );
+  } else {
+    q1 = query(
+      transactionsRef,
+      where('userId', '==', userId),
+      where('accountId', '==', accountId)
+    );
+
+    q2 = query(
+      transactionsRef,
+      where('userId', '==', userId),
+      where('toAccountId', '==', accountId)
+    );
+  }
 
   const [snapshot1, snapshot2] = await Promise.all([
     getDocs(q1),

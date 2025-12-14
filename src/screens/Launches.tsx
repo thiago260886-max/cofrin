@@ -16,8 +16,8 @@ import MainLayout from '../components/MainLayout';
 import { spacing, borderRadius, getShadow } from '../theme';
 import type { Transaction, TransactionStatus } from '../types/firebase';
 import {
-    generateBillsForMonth,
-    CreditCardBillWithTransactions
+  generateBillsForMonth,
+  CreditCardBillWithTransactions
 } from '../services/creditCardBillService';
 
 // Tipos dos parâmetros de navegação
@@ -75,10 +75,12 @@ export default function Launches() {
   // Hook de cartões de crédito
   const { activeCards } = useCreditCards();
 
-  // Hook do Firebase - com filtro de conta se presente, senão por mês/ano
-  const transactionsOptions = filterAccountId 
-    ? { accountId: filterAccountId }
-    : { month: selectedMonth, year: selectedYear };
+  // Hook do Firebase - sempre passar mês/ano; incluir filterAccountId quando houver
+  const transactionsOptions = {
+    month: selectedMonth,
+    year: selectedYear,
+    ...(filterAccountId ? { accountId: filterAccountId } : {}),
+  };
     
   const { 
     transactions, 
@@ -366,25 +368,7 @@ export default function Launches() {
           <AppHeader />
           <View style={styles.content}>
             <View style={styles.maxWidth}>
-              {/* Chip de filtro por conta */}
-              {filterAccountName && (
-                <View style={[styles.filterChip, { backgroundColor: colors.primaryBg }]}>
-                  <MaterialCommunityIcons name="filter-variant" size={16} color={colors.primary} />
-                  <Text style={[styles.filterChipText, { color: colors.primary }]}>
-                    {filterAccountName}
-                  </Text>
-                  <Pressable
-                    onPress={clearAccountFilter}
-                    hitSlop={8}
-                    style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
-                  >
-                    <MaterialCommunityIcons name="close-circle" size={18} color={colors.primary} />
-                  </Pressable>
-                </View>
-              )}
-
-              {/* Seletor de Mês/Ano - oculto quando filtro por conta está ativo */}
-              {!filterAccountId && (
+              {/* Seletor de Mês/Ano (sempre visível, mesmo com filtro de conta) */}
               <View style={[styles.monthSelector, { backgroundColor: colors.card }, getShadow(colors)]}>
                 <Pressable 
                   onPress={goToPreviousMonth}
@@ -417,22 +401,41 @@ export default function Launches() {
                   <MaterialCommunityIcons name="chevron-right" size={28} color={colors.primary} />
                 </Pressable>
               </View>
-              )}
 
-              {/* Botão Hoje (se não estiver no mês atual) */}
-              {!filterAccountId && !isCurrentMonth && (
-                <Pressable 
-                  onPress={goToToday}
-                  style={({ pressed }) => [
-                    styles.todayButton, 
-                    { backgroundColor: colors.primaryBg },
-                    pressed && { opacity: 0.8 }
-                  ]}
-                >
-                  <MaterialCommunityIcons name="calendar-today" size={16} color={colors.primary} />
-                  <Text style={[styles.todayButtonText, { color: colors.primary }]}>Ir para hoje</Text>
-                </Pressable>
-              )}
+              {/* Controls row: filter chip (left) and 'Ir para hoje' (right) aligned horizontally */}
+              <View style={styles.controlsRow}>
+                <View style={{ flex: 1 }}>
+                  {filterAccountName && (
+                    <View style={[styles.filterChip, { backgroundColor: colors.primaryBg, marginTop: 0 }]}>
+                      <MaterialCommunityIcons name="filter-variant" size={16} color={colors.primary} />
+                      <Text style={[styles.filterChipText, { color: colors.primary }]}> {filterAccountName} </Text>
+                      <Pressable
+                        onPress={clearAccountFilter}
+                        hitSlop={8}
+                        style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1 }]}
+                      >
+                        <MaterialCommunityIcons name="close-circle" size={18} color={colors.primary} />
+                      </Pressable>
+                    </View>
+                  )}
+                </View>
+
+                <View style={{ marginLeft: spacing.sm }}>
+                  {!isCurrentMonth && (
+                    <Pressable 
+                      onPress={goToToday}
+                      style={({ pressed }) => [
+                        styles.todayButton, 
+                        { backgroundColor: colors.primaryBg },
+                        pressed && { opacity: 0.8 }
+                      ]}
+                    >
+                      <MaterialCommunityIcons name="calendar-today" size={16} color={colors.primary} />
+                      <Text style={[styles.todayButtonText, { color: colors.primary }]}>Ir para hoje</Text>
+                    </Pressable>
+                  )}
+                </View>
+              </View>
 
               {/* Lista de Transações */}
               {loading ? (
@@ -677,6 +680,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     padding: spacing.sm,
     marginBottom: spacing.md,
+    zIndex: 10,
   },
   navButton: {
     padding: spacing.sm,
@@ -714,6 +718,12 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginBottom: spacing.md,
     gap: spacing.xs,
+  },
+  controlsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
   },
   todayButtonText: {
     fontSize: 13,
@@ -851,10 +861,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
     borderRadius: borderRadius.full,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
     gap: spacing.xs,
   },
   filterChipText: {
