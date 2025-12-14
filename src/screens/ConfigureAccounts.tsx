@@ -343,7 +343,10 @@ export default function ConfigureAccounts({ navigation }: any) {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView 
+        style={styles.content}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
         {/* Saldo total */}
         {activeAccounts.length > 0 && (
           <View style={[styles.totalCard, { backgroundColor: colors.primary }]}>

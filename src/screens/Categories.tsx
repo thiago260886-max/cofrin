@@ -107,7 +107,10 @@ export default function Categories({ navigation }: any) {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView 
+        style={styles.content}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
         {/* Tipo de categoria */}
         <View style={styles.typeSelector}>
           <Pressable
