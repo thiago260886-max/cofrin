@@ -6,6 +6,7 @@ import MainLayout from "../components/MainLayout";
 import HomeOverview from "../components/home/HomeOverview";
 import BalanceCard from "../components/home/BalanceCard";
 import TopExpensesCard from "../components/home/TopExpensesCard";
+import CreditCardsCard from "../components/home/CreditCardsCard";
 
 export default function Home() {
   const { user } = useAuth();
@@ -13,6 +14,13 @@ export default function Home() {
   const { width } = useWindowDimensions();
   const isNarrow = width < 700;
   const emailPrefix = user?.email?.split("@")?.[0] || user?.displayName || "Usuário";
+
+  // Dados de exemplo dos cartões de crédito
+  const creditCards = [
+    { id: '1', name: 'Nubank', currentBill: 1250.00, dueDate: 15, color: '#8b5cf6' },
+    { id: '2', name: 'Inter', currentBill: 890.50, dueDate: 10, color: '#f59e0b' },
+    { id: '3', name: 'C6 Bank', currentBill: 0, dueDate: 20, color: '#1f1f1f' },
+  ];
 
   return (
     <MainLayout>
@@ -36,6 +44,14 @@ export default function Home() {
           <View style={{ flex: 1 }}>
             <TopExpensesCard />
           </View>
+        </View>
+
+        <View style={{ height: 12 }} />
+        <View style={{ flexDirection: isNarrow ? 'column' : 'row' }}>
+          <View style={{ flex: 1 }}>
+            <CreditCardsCard cards={creditCards} />
+          </View>
+          {!isNarrow && <View style={{ flex: 1 }} />}
         </View>
           </View>
         </View>
