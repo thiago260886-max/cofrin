@@ -48,7 +48,6 @@ export default function ConfigureAccounts({ navigation }: any) {
   const [editName, setEditName] = useState('');
   const [editType, setEditType] = useState<AccountType>('checking');
   const [editIcon, setEditIcon] = useState('bank');
-  const [editIncludeInTotal, setEditIncludeInTotal] = useState(true);
 
   // Hook de contas do Firebase
   const { 
@@ -106,7 +105,6 @@ export default function ConfigureAccounts({ navigation }: any) {
     setEditName(account.name);
     setEditType(account.type);
     setEditIcon(account.icon || getAccountIcon(account.type));
-    setEditIncludeInTotal(account.includeInTotal);
     setEditModalVisible(true);
   }
 
@@ -120,7 +118,6 @@ export default function ConfigureAccounts({ navigation }: any) {
         name: editName.trim(),
         type: editType,
         icon: editIcon,
-        includeInTotal: editIncludeInTotal,
       });
 
       if (result) {
@@ -143,15 +140,28 @@ export default function ConfigureAccounts({ navigation }: any) {
     
     // Primeiro, contar quantas transações existem
     const count = await countTransactionsByAccount(user.uid, editingAccount.id);
+    const currentBalance = editingAccount.balance || 0;
     
-    if (count === 0) {
-      showAlert('Aviso', 'Esta conta não possui lançamentos para excluir.', [{ text: 'OK', style: 'default' }]);
+    // Verificar se há algo para resetar
+    if (count === 0 && currentBalance === 0) {
+      showAlert('Aviso', 'Esta conta já está zerada (sem lançamentos e sem saldo).', [{ text: 'OK', style: 'default' }]);
       return;
     }
     
+    // Mensagem de confirmação dinâmica
+    let message = 'Esta ação irá ';
+    if (count > 0) {
+      message += `excluir ${count} lançamento${count > 1 ? 's' : ''} desta conta`;
+    }
+    if (currentBalance !== 0) {
+      if (count > 0) message += ' e ';
+      message += 'zerar o saldo';
+    }
+    message += '. Esta ação NÃO pode ser desfeita!';
+    
     showAlert(
       'Resetar conta?',
-      `Esta ação irá excluir ${count} lançamento${count > 1 ? 's' : ''} desta conta e zerar o saldo. Esta ação NÃO pode ser desfeita!`,
+      message,
       [
         { text: 'Cancelar', style: 'cancel' },
         { 
@@ -160,29 +170,47 @@ export default function ConfigureAccounts({ navigation }: any) {
           onPress: async () => {
             setSaving(true);
             try {
-              // Deletar todas as transações
-              const { deleted, error } = await deleteTransactionsByAccount(user.uid, editingAccount.id);
+              let deleted = 0;
               
-              if (error) {
-                showAlert('Erro', error, [{ text: 'OK', style: 'default' }]);
-                return;
+              // Deletar todas as transações se houver
+              if (count > 0) {
+                const result = await deleteTransactionsByAccount(user.uid, editingAccount.id);
+                
+                if (result.error) {
+                  showAlert('Erro', result.error, [{ text: 'OK', style: 'default' }]);
+                  setSaving(false);
+                  return;
+                }
+                
+                deleted = result.deleted;
               }
               
-              // Zerar o saldo da conta
+              // Zerar o saldo da conta (sempre)
               await setAccountBalance(editingAccount.id, 0);
               
-              // Atualizar estado local
-              setEditBalance('0');
+              // Atualizar a conta local para refletir o saldo zerado
+              await updateAccount(editingAccount.id, { balance: 0 });
+              
+              // Mensagem de sucesso dinâmica
+              let successMessage = '';
+              if (deleted > 0) {
+                successMessage = `${deleted} lançamento${deleted > 1 ? 's' : ''} excluído${deleted > 1 ? 's' : ''}. `;
+              }
+              successMessage += 'Saldo zerado.';
               
               showAlert(
                 'Conta resetada', 
-                `${deleted} lançamento${deleted > 1 ? 's' : ''} excluído${deleted > 1 ? 's' : ''}. Saldo zerado.`,
-                [{ text: 'OK', style: 'default' }]
+                successMessage,
+                [{ 
+                  text: 'OK', 
+                  style: 'default',
+                  onPress: () => {
+                    // Fechar modal
+                    setEditModalVisible(false);
+                    setEditingAccount(null);
+                  }
+                }]
               );
-              
-              // Fechar modal e atualizar lista
-              setEditModalVisible(false);
-              setEditingAccount(null);
             } catch (err) {
               showAlert('Erro', 'Ocorreu um erro ao resetar a conta', [{ text: 'OK', style: 'default' }]);
             } finally {
@@ -531,16 +559,9 @@ export default function ConfigureAccounts({ navigation }: any) {
           <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
             {/* Header do Modal */}
             <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Editar Conta</Text>
               <Pressable onPress={() => setEditModalVisible(false)} hitSlop={12}>
                 <MaterialCommunityIcons name="close" size={24} color={colors.text} />
-              </Pressable>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Editar Conta</Text>
-              <Pressable onPress={handleSaveEdit} disabled={saving} hitSlop={12}>
-                <MaterialCommunityIcons 
-                  name="check" 
-                  size={24} 
-                  color={saving ? colors.textMuted : colors.primary} 
-                />
               </Pressable>
             </View>
 
@@ -632,25 +653,6 @@ export default function ConfigureAccounts({ navigation }: any) {
                 </View>
               </View>
 
-              {/* Incluir no total */}
-              <Pressable
-                onPress={() => setEditIncludeInTotal(!editIncludeInTotal)}
-                style={styles.checkboxRow}
-              >
-                <View style={[
-                  styles.checkbox,
-                  { borderColor: colors.primary },
-                  editIncludeInTotal && { backgroundColor: colors.primary },
-                ]}>
-                  {editIncludeInTotal && (
-                    <MaterialCommunityIcons name="check" size={14} color="#fff" />
-                  )}
-                </View>
-                <Text style={[styles.checkboxLabel, { color: colors.text }]}>
-                  Incluir no saldo total
-                </Text>
-              </Pressable>
-
               {/* Ações */}
               <View style={styles.modalActionsColumn}>
                 {/* Botão de Resetar */}
@@ -671,20 +673,8 @@ export default function ConfigureAccounts({ navigation }: any) {
                   </View>
                 </Pressable>
 
-                {/* Botões de Arquivar e Excluir */}
+                {/* Botões de Confirmar e Excluir */}
                 <View style={styles.modalActions}>
-                  <Pressable
-                    onPress={handleArchiveFromModal}
-                    style={({ pressed }) => [
-                      styles.actionButton,
-                      { backgroundColor: colors.bg, borderColor: colors.border },
-                      pressed && { opacity: 0.7 },
-                    ]}
-                  >
-                    <MaterialCommunityIcons name="archive-outline" size={20} color={colors.textMuted} />
-                    <Text style={[styles.actionButtonText, { color: colors.text }]}>Arquivar</Text>
-                  </Pressable>
-
                   <Pressable
                     onPress={handleDeleteFromModal}
                     style={({ pressed }) => [
@@ -696,6 +686,22 @@ export default function ConfigureAccounts({ navigation }: any) {
                   >
                     <MaterialCommunityIcons name="delete-outline" size={20} color={colors.expense} />
                     <Text style={[styles.actionButtonText, { color: colors.expense }]}>Excluir</Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={handleSaveEdit}
+                    disabled={saving || !editName.trim()}
+                    style={({ pressed }) => [
+                      styles.actionButton,
+                      { backgroundColor: colors.primary, borderColor: colors.primary },
+                      pressed && { opacity: 0.9 },
+                      (saving || !editName.trim()) && { opacity: 0.6 },
+                    ]}
+                  >
+                    <MaterialCommunityIcons name="check" size={20} color="#fff" />
+                    <Text style={[styles.actionButtonText, { color: '#fff' }]}>
+                      {saving ? 'Salvando...' : 'Confirmar'}
+                    </Text>
                   </Pressable>
                 </View>
               </View>
