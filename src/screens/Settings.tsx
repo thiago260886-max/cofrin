@@ -2,9 +2,9 @@ import { View, Text, Pressable, StyleSheet, ScrollView, Platform } from "react-n
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAppTheme } from "../contexts/themeContext";
 import { useAuth } from "../contexts/authContext";
-import { logout } from "../services/auth";
 import { useCustomAlert } from "../hooks/useCustomAlert";
 import CustomAlert from "../components/CustomAlert";
+import SettingsFooter from "../components/SettingsFooter";
 import { spacing, borderRadius, getShadow } from "../theme";
 
 interface MenuItem {
@@ -35,27 +35,6 @@ export default function Settings({ navigation }: any) {
     { id: "help", label: "Ajuda & Suporte", icon: "help-circle-outline" },
     { id: "about", label: "Sobre o app", icon: "information-outline" },
   ];
-
-  function handleLogout() {
-    showAlert(
-      "Sair da conta",
-      "Tem certeza que deseja sair?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        { 
-          text: "Sair", 
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await logout();
-            } catch (error) {
-              console.error("Erro ao sair:", error);
-            }
-          }
-        },
-      ]
-    );
-  }
 
   function handlePress(item: MenuItem) {
     if (item.screen) {
@@ -146,26 +125,13 @@ export default function Settings({ navigation }: any) {
           </View>
         </View>
 
-        {/* Botão de logout */}
-        <Pressable
-          onPress={handleLogout}
-          style={({ pressed }) => [
-            styles.logoutButton,
-            { backgroundColor: colors.card },
-            getShadow(colors),
-            pressed && { opacity: 0.9 },
-          ]}
-        >
-          <MaterialCommunityIcons name="logout" size={20} color={colors.expense} />
-          <Text style={[styles.logoutText, { color: colors.expense }]}>Sair da conta</Text>
-        </Pressable>
-
         {/* Versão */}
         <Text style={[styles.version, { color: colors.textMuted }]}>
           Cofrin v1.0.0
         </Text>
       </View>
       <CustomAlert {...alertState} onClose={hideAlert} />
+      <SettingsFooter navigation={navigation} />
     </ScrollView>
   );
 }
@@ -175,7 +141,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingBottom: 100,
+    paddingBottom: 150,
   },
   header: {
     paddingTop: Platform.OS === 'ios' ? 60 : 40,
@@ -258,18 +224,6 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     marginLeft: 62,
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: borderRadius.lg,
-    gap: spacing.sm,
-  },
-  logoutText: {
-    fontSize: 16,
-    fontWeight: '600',
   },
   version: {
     textAlign: 'center',

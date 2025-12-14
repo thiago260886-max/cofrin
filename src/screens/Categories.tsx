@@ -8,6 +8,7 @@ import { CategoryType, CATEGORY_ICONS, Category } from "../types/firebase";
 import { useCustomAlert } from "../hooks";
 import EditCategoryModal from "../components/EditCategoryModal";
 import CustomAlert from "../components/CustomAlert";
+import SettingsFooter from "../components/SettingsFooter";
 
 export default function Categories({ navigation }: any) {
   const { colors } = useAppTheme();
@@ -311,6 +312,7 @@ export default function Categories({ navigation }: any) {
       />
 
       <CustomAlert {...alertState} onClose={hideAlert} />
+      <SettingsFooter navigation={navigation} />
     </View>
   );
 }
@@ -318,6 +320,7 @@ export default function Categories({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingBottom: 70,
   },
   header: {
     flexDirection: 'row',

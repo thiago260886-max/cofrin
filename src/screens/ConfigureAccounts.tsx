@@ -7,6 +7,7 @@ import { spacing, borderRadius, getShadow } from "../theme";
 import { useAccounts } from "../hooks/useAccounts";
 import { useCustomAlert } from "../hooks/useCustomAlert";
 import CustomAlert from "../components/CustomAlert";
+import SettingsFooter from "../components/SettingsFooter";
 import { AccountType, ACCOUNT_TYPE_LABELS, Account } from "../types/firebase";
 import { formatCurrencyBRL } from "../utils/format";
 import { deleteTransactionsByAccount, countTransactionsByAccount } from "../services/transactionService";
@@ -716,6 +717,7 @@ export default function ConfigureAccounts({ navigation }: any) {
         buttons={alertState.buttons}
         onClose={hideAlert}
       />
+      <SettingsFooter navigation={navigation} />
     </View>
   );
 }
@@ -723,6 +725,7 @@ export default function ConfigureAccounts({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingBottom: 70,
   },
   header: {
     flexDirection: 'row',

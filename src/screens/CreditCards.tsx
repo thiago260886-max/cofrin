@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAppTheme } from "../contexts/themeContext";
 import { useCustomAlert } from "../hooks/useCustomAlert";
 import CustomAlert from "../components/CustomAlert";
+import SettingsFooter from "../components/SettingsFooter";
 import { useAuth } from "../contexts/authContext";
 import { spacing, borderRadius, getShadow } from "../theme";
 import { useCreditCards } from "../hooks/useCreditCards";
@@ -782,6 +783,7 @@ export default function CreditCards({ navigation }: any) {
         buttons={alertState.buttons}
         onClose={hideAlert}
       />
+      <SettingsFooter navigation={navigation} />
     </View>
   );
 }
@@ -789,6 +791,7 @@ export default function CreditCards({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingBottom: 70,
   },
   header: {
     flexDirection: 'row',
