@@ -23,7 +23,7 @@ import {
 import { updateAccountBalance } from './accountService';
 import { getCategoryById } from './categoryService';
 import { getAccountById } from './accountService';
-import { getCreditCardById } from './creditCardService';
+import { getCreditCardById, updateCreditCardUsage } from './creditCardService';
 
 const transactionsRef = collection(db, COLLECTIONS.TRANSACTIONS);
 
@@ -56,10 +56,20 @@ export async function createTransaction(
     }
   }
 
-  // Conta origem
-  const account = await getAccountById(data.accountId);
-  if (account) {
-    accountName = account.name;
+  // Cartão de crédito
+  if (data.creditCardId) {
+    const card = await getCreditCardById(data.creditCardId);
+    if (card) {
+      creditCardName = card.name;
+    }
+  }
+
+  // Conta origem - só buscar se tiver accountId válido
+  if (data.accountId) {
+    const account = await getAccountById(data.accountId);
+    if (account) {
+      accountName = account.name;
+    }
   }
 
   // Conta destino (transferência)
@@ -70,21 +80,12 @@ export async function createTransaction(
     }
   }
 
-  // Cartão de crédito
-  if (data.creditCardId) {
-    const card = await getCreditCardById(data.creditCardId);
-    if (card) {
-      creditCardName = card.name;
-    }
-  }
-
   // Criar transação - construir objeto sem campos undefined
   const transactionData: Record<string, any> = {
     type: data.type,
     amount: data.amount,
     description: data.description,
     date: data.date,
-    accountId: data.accountId,
     recurrence: data.recurrence,
     status: data.status,
     userId,
@@ -94,13 +95,18 @@ export async function createTransaction(
     updatedAt: now,
   };
 
+  // Adicionar accountId apenas se tiver valor (não é obrigatório para cartão de crédito)
+  if (data.accountId) {
+    transactionData.accountId = data.accountId;
+    if (accountName) transactionData.accountName = accountName;
+  }
+
   // Adicionar campos opcionais apenas se tiverem valor
   if (data.categoryId) {
     transactionData.categoryId = data.categoryId;
     if (categoryName) transactionData.categoryName = categoryName;
     if (categoryIcon) transactionData.categoryIcon = categoryIcon;
   }
-  if (accountName) transactionData.accountName = accountName;
   if (data.toAccountId) {
     transactionData.toAccountId = data.toAccountId;
     if (toAccountName) transactionData.toAccountName = toAccountName;
@@ -117,9 +123,19 @@ export async function createTransaction(
 
   const docRef = await addDoc(transactionsRef, transactionData);
 
-  // Atualizar saldos das contas apenas se status for 'completed' e não for cartão de crédito
-  if (!data.creditCardId && data.status === 'completed') {
-    await updateBalancesForTransaction(data);
+  // Atualizar saldos das contas apenas se:
+  // - Tiver accountId (não é cartão de crédito sozinho)
+  // - Não for transação de cartão de crédito
+  // - Status for 'completed'
+  if (data.accountId && !data.creditCardId && data.status === 'completed') {
+    await updateBalancesForTransaction(data as CreateTransactionInput & { accountId: string });
+  }
+
+  // Atualizar uso do cartão de crédito se for transação de cartão
+  if (data.creditCardId && data.status === 'completed') {
+    // Despesa aumenta o uso, receita (estorno) diminui o uso
+    const usageAmount = data.type === 'expense' ? data.amount : -data.amount;
+    await updateCreditCardUsage(data.creditCardId, usageAmount);
   }
 
   // Retornar transação criada (com os mesmos dados salvos)

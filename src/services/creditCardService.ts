@@ -11,7 +11,9 @@ import {
     getDocs,
     getDoc,
     query,
-    where, Timestamp
+    where,
+    Timestamp,
+    increment
 } from 'firebase/firestore';
 import { db, COLLECTIONS } from './firebase';
 import {
@@ -131,6 +133,18 @@ export async function unarchiveCreditCard(cardId: string): Promise<void> {
 export async function deleteCreditCard(cardId: string): Promise<void> {
   const docRef = doc(db, COLLECTIONS.CREDIT_CARDS, cardId);
   await deleteDoc(docRef);
+}
+
+// Atualizar uso do cartão (adicionar ou remover valor)
+export async function updateCreditCardUsage(
+  cardId: string,
+  amount: number // positivo para adicionar uso, negativo para remover (estorno)
+): Promise<void> {
+  const docRef = doc(db, COLLECTIONS.CREDIT_CARDS, cardId);
+  await updateDoc(docRef, {
+    currentUsed: increment(amount),
+    updatedAt: Timestamp.now(),
+  });
 }
 
 // ==========================================

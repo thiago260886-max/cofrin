@@ -104,8 +104,8 @@ export interface Transaction extends BaseDocument {
   categoryName?: string; // Desnormalizado para performance
   categoryIcon?: string;
   
-  // Conta origem (sempre presente)
-  accountId: string;
+  // Conta origem (opcional - não presente quando usa apenas cartão de crédito)
+  accountId?: string;
   accountName?: string; // Desnormalizado
   
   // Conta destino (apenas para transferências)

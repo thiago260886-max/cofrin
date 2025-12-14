@@ -359,10 +359,14 @@ export default function AddTransactionModal({
           amount: parsed,
           description: description.trim() || categoryName,
           date: Timestamp.fromDate(transactionDate),
-          accountId: useCreditCard && type === 'despesa' ? '' : accountId,
           recurrence,
           status: transactionStatus,
         };
+
+        // Adicionar accountId apenas se não for cartão de crédito ou se não for despesa com cartão
+        if (!(useCreditCard && type === 'despesa') && accountId) {
+          data.accountId = accountId;
+        }
 
         // Add optional fields only if they have values
         if (type !== 'transfer' && categoryId) {
