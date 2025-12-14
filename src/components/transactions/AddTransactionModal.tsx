@@ -9,68 +9,39 @@ import {
     Dimensions,
     Text,
     TextInput,
+    Alert,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { Timestamp } from 'firebase/firestore';
 import { useAppTheme } from '../../contexts/themeContext';
 import { spacing, borderRadius, getShadow } from '../../theme';
+import { useCategories } from '../../hooks/useCategories';
+import { useAccounts } from '../../hooks/useAccounts';
+import { useCreditCards } from '../../hooks/useCreditCards';
+import { useTransactions } from '../../hooks/useFirebaseTransactions';
+import { TransactionType, RecurrenceType } from '../../types/firebase';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // Types
-type TransactionType = 'despesa' | 'receita' | 'transfer';
-type RecurrenceType = 'none' | 'semanal' | 'quinzenal' | 'mensal' | 'anual';
-type PickerType = 'none' | 'category' | 'account' | 'toAccount' | 'recurrence' | 'date';
+type LocalTransactionType = 'despesa' | 'receita' | 'transfer';
+type PickerType = 'none' | 'category' | 'account' | 'toAccount' | 'creditCard' | 'recurrence' | 'date';
 
 interface Props {
   visible: boolean;
   onClose: () => void;
-  onSave?: (payload: {
-    type: string;
-    amount: number;
-    description: string;
-    category: string;
-    account?: string;
-    toAccount?: string;
-    date: Date;
-    recurrence: RecurrenceType;
-  }) => void;
-  initialType?: TransactionType;
+  onSave?: () => void;
+  initialType?: LocalTransactionType;
 }
 
 // Constants
-const CATEGORIES = [
-  'Alimentação',
-  'Transporte',
-  'Moradia',
-  'Saúde',
-  'Educação',
-  'Lazer',
-  'Vestuário',
-  'Serviços',
-  'Salário',
-  'Investimentos',
-  'Outros',
-];
-
-const ACCOUNTS = [
-  'Nubank',
-  'Itaú',
-  'Bradesco',
-  'Santander',
-  'Caixa',
-  'Banco do Brasil',
-  'Inter',
-  'C6 Bank',
-  'Carteira',
-];
-
 const RECURRENCE_OPTIONS: { label: string; value: RecurrenceType }[] = [
   { label: 'Não repetir', value: 'none' },
-  { label: 'Semanal', value: 'semanal' },
-  { label: 'Quinzenal', value: 'quinzenal' },
-  { label: 'Mensal', value: 'mensal' },
-  { label: 'Anual', value: 'anual' },
+  { label: 'Semanal', value: 'weekly' },
+  { label: 'Quinzenal', value: 'weekly' }, // TODO: Implementar quinzenal
+  { label: 'Mensal', value: 'monthly' },
+  { label: 'Anual', value: 'yearly' },
 ];
 
 const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -114,15 +85,35 @@ export default function AddTransactionModal({
 }: Props) {
   const { colors } = useAppTheme();
 
+  // Firebase hooks
+  const { categories } = useCategories();
+  const { activeAccounts } = useAccounts();
+  const { activeCards } = useCreditCards();
+  const { createTransaction } = useTransactions();
+
   // State
-  const [type, setType] = useState<TransactionType>(initialType);
+  const [type, setType] = useState<LocalTransactionType>(initialType);
   const [amount, setAmount] = useState('R$ 0,00');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState('Outros');
-  const [account, setAccount] = useState('Nubank');
-  const [toAccount, setToAccount] = useState('Itaú');
+  
+  // Category state
+  const [categoryId, setCategoryId] = useState('');
+  const [categoryName, setCategoryName] = useState('Outros');
+  
+  // Account state
+  const [accountId, setAccountId] = useState('');
+  const [accountName, setAccountName] = useState('');
+  const [toAccountId, setToAccountId] = useState('');
+  const [toAccountName, setToAccountName] = useState('');
+  
+  // Credit card state (optional for expenses)
+  const [creditCardId, setCreditCardId] = useState('');
+  const [creditCardName, setCreditCardName] = useState('');
+  const [useCreditCard, setUseCreditCard] = useState(false);
+  
   const [date, setDate] = useState(new Date());
   const [recurrence, setRecurrence] = useState<RecurrenceType>('none');
+  const [saving, setSaving] = useState(false);
 
   // Single picker state - evita modais aninhados
   const [activePicker, setActivePicker] = useState<PickerType>('none');
@@ -130,20 +121,57 @@ export default function AddTransactionModal({
   // Date picker state for custom calendar
   const [tempDate, setTempDate] = useState(new Date());
 
+  // Set default account when accounts load
+  useEffect(() => {
+    if (activeAccounts.length > 0 && !accountId) {
+      setAccountId(activeAccounts[0].id);
+      setAccountName(activeAccounts[0].name);
+      if (activeAccounts.length > 1) {
+        setToAccountId(activeAccounts[1].id);
+        setToAccountName(activeAccounts[1].name);
+      }
+    }
+  }, [activeAccounts, accountId]);
+
+  // Set default category when categories load
+  useEffect(() => {
+    if (categories.length > 0 && !categoryId) {
+      const defaultCat = categories.find(c => c.name === 'Outros') || categories[0];
+      setCategoryId(defaultCat.id);
+      setCategoryName(defaultCat.name);
+    }
+  }, [categories, categoryId]);
+
   // Reset form when modal opens
   useEffect(() => {
     if (visible) {
       setType(initialType);
       setAmount('R$ 0,00');
       setDescription('');
-      setCategory('Outros');
-      setAccount('Nubank');
-      setToAccount('Itaú');
       setDate(new Date());
       setRecurrence('none');
       setActivePicker('none');
+      setUseCreditCard(false);
+      setCreditCardId('');
+      setCreditCardName('');
+      setSaving(false);
+      
+      // Reset to defaults
+      if (activeAccounts.length > 0) {
+        setAccountId(activeAccounts[0].id);
+        setAccountName(activeAccounts[0].name);
+        if (activeAccounts.length > 1) {
+          setToAccountId(activeAccounts[1].id);
+          setToAccountName(activeAccounts[1].name);
+        }
+      }
+      if (categories.length > 0) {
+        const defaultCat = categories.find(c => c.name === 'Outros') || categories[0];
+        setCategoryId(defaultCat.id);
+        setCategoryName(defaultCat.name);
+      }
     }
-  }, [visible, initialType]);
+  }, [visible, initialType, activeAccounts, categories]);
 
   // Sync tempDate when opening date picker
   useEffect(() => {
@@ -177,21 +205,61 @@ export default function AddTransactionModal({
     []
   );
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     const parsed = parseCurrency(amount);
-    const value = type === 'despesa' ? -Math.abs(parsed) : parsed;
-    onSave?.({
-      type,
-      amount: value,
-      description,
-      category,
-      account,
-      toAccount: type === 'transfer' ? toAccount : undefined,
-      date,
-      recurrence,
-    });
-    onClose();
-  }, [type, amount, description, category, account, toAccount, date, recurrence, onSave, onClose]);
+    if (parsed <= 0) {
+      Alert.alert('Erro', 'O valor deve ser maior que zero');
+      return;
+    }
+
+    if (!accountId && !useCreditCard) {
+      Alert.alert('Erro', 'Selecione uma conta');
+      return;
+    }
+
+    if (type === 'transfer' && !toAccountId) {
+      Alert.alert('Erro', 'Selecione a conta de destino');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // Map local type to Firebase type
+      const firebaseType: TransactionType = 
+        type === 'despesa' ? 'expense' : 
+        type === 'receita' ? 'income' : 'transfer';
+
+      const result = await createTransaction({
+        type: firebaseType,
+        amount: parsed,
+        description: description.trim() || categoryName,
+        date: Timestamp.fromDate(date),
+        categoryId: type !== 'transfer' ? categoryId : undefined,
+        accountId: useCreditCard && type === 'despesa' ? '' : accountId,
+        toAccountId: type === 'transfer' ? toAccountId : undefined,
+        creditCardId: useCreditCard && type === 'despesa' ? creditCardId : undefined,
+        recurrence,
+        status: 'completed',
+      });
+
+      if (result) {
+        Alert.alert('Sucesso', 'Lançamento salvo!');
+        onSave?.();
+        onClose();
+      } else {
+        Alert.alert('Erro', 'Não foi possível salvar o lançamento');
+      }
+    } catch (error) {
+      console.error('Erro ao salvar:', error);
+      Alert.alert('Erro', 'Ocorreu um erro ao salvar');
+    } finally {
+      setSaving(false);
+    }
+  }, [
+    type, amount, description, categoryId, categoryName,
+    accountId, toAccountId, creditCardId, useCreditCard,
+    date, recurrence, createTransaction, onSave, onClose
+  ]);
 
   // Componente de campo selecionável
   const SelectField = ({
@@ -358,82 +426,263 @@ export default function AddTransactionModal({
       );
     }
 
-    // Para data no Web ou lista de opções
-    let title = '';
-    let options: string[] = [];
-    let selectedValue = '';
-    let onSelect: (value: string) => void = () => {};
-
-    switch (activePicker) {
-      case 'category':
-        title = 'Selecionar Categoria';
-        options = CATEGORIES;
-        selectedValue = category;
-        onSelect = (v) => { setCategory(v); setActivePicker('none'); };
-        break;
-      case 'account':
-        title = type === 'transfer' ? 'Conta de Origem' : 'Selecionar Conta';
-        options = ACCOUNTS;
-        selectedValue = account;
-        onSelect = (v) => { setAccount(v); setActivePicker('none'); };
-        break;
-      case 'toAccount':
-        title = 'Conta de Destino';
-        options = ACCOUNTS.filter((a) => a !== account);
-        selectedValue = toAccount;
-        onSelect = (v) => { setToAccount(v); setActivePicker('none'); };
-        break;
-      case 'recurrence':
-        title = 'Repetir Lançamento';
-        options = RECURRENCE_OPTIONS.map((r) => r.label);
-        selectedValue = RECURRENCE_OPTIONS.find((r) => r.value === recurrence)?.label || 'Não repetir';
-        onSelect = (label) => {
-          const option = RECURRENCE_OPTIONS.find((r) => r.label === label);
-          if (option) setRecurrence(option.value);
-          setActivePicker('none');
-        };
-        break;
-      case 'date':
-        // Custom date picker for web
-        return <CustomDatePicker />;
+    // Custom date picker for web
+    if (activePicker === 'date') {
+      return <CustomDatePicker />;
     }
 
-    return (
-      <View style={[styles.pickerContainer, { backgroundColor: colors.card }]}>
-        <View style={[styles.pickerHeader, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.pickerTitle, { color: colors.text }]}>{title}</Text>
-          <Pressable onPress={() => setActivePicker('none')} hitSlop={12}>
-            <MaterialCommunityIcons name="close" size={24} color={colors.textMuted} />
-          </Pressable>
-        </View>
-        <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>
-          {options.map((option) => (
-            <Pressable
-              key={option}
-              onPress={() => onSelect(option)}
-              style={({ pressed }) => [
-                styles.pickerOption,
-                { backgroundColor: pressed ? colors.grayLight : 'transparent' },
-                selectedValue === option && { backgroundColor: colors.primaryBg },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.pickerOptionText,
-                  { color: colors.text },
-                  selectedValue === option && { color: colors.primary, fontWeight: '600' },
+    // Render category picker
+    if (activePicker === 'category') {
+      const filteredCategories = categories.filter(c => 
+        type === 'despesa' ? c.type === 'expense' : c.type === 'income'
+      );
+      
+      return (
+        <View style={[styles.pickerContainer, { backgroundColor: colors.card }]}>
+          <View style={[styles.pickerHeader, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.pickerTitle, { color: colors.text }]}>Selecionar Categoria</Text>
+            <Pressable onPress={() => setActivePicker('none')} hitSlop={12}>
+              <MaterialCommunityIcons name="close" size={24} color={colors.textMuted} />
+            </Pressable>
+          </View>
+          <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>
+            {filteredCategories.map((cat) => (
+              <Pressable
+                key={cat.id}
+                onPress={() => {
+                  setCategoryId(cat.id);
+                  setCategoryName(cat.name);
+                  setActivePicker('none');
+                }}
+                style={({ pressed }) => [
+                  styles.pickerOption,
+                  { backgroundColor: pressed ? colors.grayLight : 'transparent' },
+                  categoryId === cat.id && { backgroundColor: colors.primaryBg },
                 ]}
               >
-                {option}
-              </Text>
-              {selectedValue === option && (
-                <MaterialCommunityIcons name="check" size={20} color={colors.primary} />
-              )}
+                <View style={styles.pickerOptionWithIcon}>
+                  <MaterialCommunityIcons 
+                    name={(cat.icon || 'tag') as any} 
+                    size={20} 
+                    color={categoryId === cat.id ? colors.primary : colors.textMuted} 
+                  />
+                  <Text
+                    style={[
+                      styles.pickerOptionText,
+                      { color: colors.text, marginLeft: spacing.sm },
+                      categoryId === cat.id && { color: colors.primary, fontWeight: '600' },
+                    ]}
+                  >
+                    {cat.name}
+                  </Text>
+                </View>
+                {categoryId === cat.id && (
+                  <MaterialCommunityIcons name="check" size={20} color={colors.primary} />
+                )}
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      );
+    }
+
+    // Render account picker
+    if (activePicker === 'account') {
+      return (
+        <View style={[styles.pickerContainer, { backgroundColor: colors.card }]}>
+          <View style={[styles.pickerHeader, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.pickerTitle, { color: colors.text }]}>
+              {type === 'transfer' ? 'Conta de Origem' : 'Selecionar Conta'}
+            </Text>
+            <Pressable onPress={() => setActivePicker('none')} hitSlop={12}>
+              <MaterialCommunityIcons name="close" size={24} color={colors.textMuted} />
             </Pressable>
-          ))}
-        </ScrollView>
-      </View>
-    );
+          </View>
+          <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>
+            {activeAccounts.map((acc) => (
+              <Pressable
+                key={acc.id}
+                onPress={() => {
+                  setAccountId(acc.id);
+                  setAccountName(acc.name);
+                  setUseCreditCard(false);
+                  setActivePicker('none');
+                }}
+                style={({ pressed }) => [
+                  styles.pickerOption,
+                  { backgroundColor: pressed ? colors.grayLight : 'transparent' },
+                  accountId === acc.id && !useCreditCard && { backgroundColor: colors.primaryBg },
+                ]}
+              >
+                <View style={styles.pickerOptionWithIcon}>
+                  <MaterialCommunityIcons 
+                    name={(acc.icon || 'bank') as any} 
+                    size={20} 
+                    color={accountId === acc.id && !useCreditCard ? colors.primary : colors.textMuted} 
+                  />
+                  <Text
+                    style={[
+                      styles.pickerOptionText,
+                      { color: colors.text, marginLeft: spacing.sm },
+                      accountId === acc.id && !useCreditCard && { color: colors.primary, fontWeight: '600' },
+                    ]}
+                  >
+                    {acc.name}
+                  </Text>
+                </View>
+                {accountId === acc.id && !useCreditCard && (
+                  <MaterialCommunityIcons name="check" size={20} color={colors.primary} />
+                )}
+              </Pressable>
+            ))}
+            
+            {/* Credit cards option for expenses */}
+            {type === 'despesa' && activeCards.length > 0 && (
+              <>
+                <View style={[styles.pickerDivider, { backgroundColor: colors.border }]} />
+                <Text style={[styles.pickerSectionTitle, { color: colors.textMuted }]}>
+                  CARTÕES DE CRÉDITO
+                </Text>
+                {activeCards.map((card) => (
+                  <Pressable
+                    key={card.id}
+                    onPress={() => {
+                      setCreditCardId(card.id);
+                      setCreditCardName(card.name);
+                      setUseCreditCard(true);
+                      setActivePicker('none');
+                    }}
+                    style={({ pressed }) => [
+                      styles.pickerOption,
+                      { backgroundColor: pressed ? colors.grayLight : 'transparent' },
+                      creditCardId === card.id && useCreditCard && { backgroundColor: colors.primaryBg },
+                    ]}
+                  >
+                    <View style={styles.pickerOptionWithIcon}>
+                      <MaterialCommunityIcons 
+                        name="credit-card" 
+                        size={20} 
+                        color={creditCardId === card.id && useCreditCard ? colors.primary : colors.textMuted} 
+                      />
+                      <Text
+                        style={[
+                          styles.pickerOptionText,
+                          { color: colors.text, marginLeft: spacing.sm },
+                          creditCardId === card.id && useCreditCard && { color: colors.primary, fontWeight: '600' },
+                        ]}
+                      >
+                        {card.name}
+                      </Text>
+                    </View>
+                    {creditCardId === card.id && useCreditCard && (
+                      <MaterialCommunityIcons name="check" size={20} color={colors.primary} />
+                    )}
+                  </Pressable>
+                ))}
+              </>
+            )}
+          </ScrollView>
+        </View>
+      );
+    }
+
+    // Render toAccount picker (for transfers)
+    if (activePicker === 'toAccount') {
+      const filteredAccounts = activeAccounts.filter(a => a.id !== accountId);
+      
+      return (
+        <View style={[styles.pickerContainer, { backgroundColor: colors.card }]}>
+          <View style={[styles.pickerHeader, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.pickerTitle, { color: colors.text }]}>Conta de Destino</Text>
+            <Pressable onPress={() => setActivePicker('none')} hitSlop={12}>
+              <MaterialCommunityIcons name="close" size={24} color={colors.textMuted} />
+            </Pressable>
+          </View>
+          <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>
+            {filteredAccounts.map((acc) => (
+              <Pressable
+                key={acc.id}
+                onPress={() => {
+                  setToAccountId(acc.id);
+                  setToAccountName(acc.name);
+                  setActivePicker('none');
+                }}
+                style={({ pressed }) => [
+                  styles.pickerOption,
+                  { backgroundColor: pressed ? colors.grayLight : 'transparent' },
+                  toAccountId === acc.id && { backgroundColor: colors.primaryBg },
+                ]}
+              >
+                <View style={styles.pickerOptionWithIcon}>
+                  <MaterialCommunityIcons 
+                    name={(acc.icon || 'bank') as any} 
+                    size={20} 
+                    color={toAccountId === acc.id ? colors.primary : colors.textMuted} 
+                  />
+                  <Text
+                    style={[
+                      styles.pickerOptionText,
+                      { color: colors.text, marginLeft: spacing.sm },
+                      toAccountId === acc.id && { color: colors.primary, fontWeight: '600' },
+                    ]}
+                  >
+                    {acc.name}
+                  </Text>
+                </View>
+                {toAccountId === acc.id && (
+                  <MaterialCommunityIcons name="check" size={20} color={colors.primary} />
+                )}
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      );
+    }
+
+    // Render recurrence picker
+    if (activePicker === 'recurrence') {
+      return (
+        <View style={[styles.pickerContainer, { backgroundColor: colors.card }]}>
+          <View style={[styles.pickerHeader, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.pickerTitle, { color: colors.text }]}>Repetir Lançamento</Text>
+            <Pressable onPress={() => setActivePicker('none')} hitSlop={12}>
+              <MaterialCommunityIcons name="close" size={24} color={colors.textMuted} />
+            </Pressable>
+          </View>
+          <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>
+            {RECURRENCE_OPTIONS.map((option) => (
+              <Pressable
+                key={option.value}
+                onPress={() => {
+                  setRecurrence(option.value);
+                  setActivePicker('none');
+                }}
+                style={({ pressed }) => [
+                  styles.pickerOption,
+                  { backgroundColor: pressed ? colors.grayLight : 'transparent' },
+                  recurrence === option.value && { backgroundColor: colors.primaryBg },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.pickerOptionText,
+                    { color: colors.text },
+                    recurrence === option.value && { color: colors.primary, fontWeight: '600' },
+                  ]}
+                >
+                  {option.label}
+                </Text>
+                {recurrence === option.value && (
+                  <MaterialCommunityIcons name="check" size={20} color={colors.primary} />
+                )}
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      );
+    }
+
+    return null;
   };
 
   return (
@@ -475,7 +724,7 @@ export default function AddTransactionModal({
 
                 {/* Type selector */}
                 <View style={styles.typeSelector}>
-                  {(['despesa', 'receita', 'transfer'] as TransactionType[]).map((t) => (
+                  {(['despesa', 'receita', 'transfer'] as LocalTransactionType[]).map((t) => (
                     <Pressable
                       key={t}
                       onPress={() => setType(t)}
@@ -537,28 +786,32 @@ export default function AddTransactionModal({
 
                 {/* Card de campos */}
                 <View style={[styles.fieldsCard, { backgroundColor: colors.card }, getShadow(colors)]}>
-                  {/* Categoria */}
-                  <SelectField
-                    label="Categoria"
-                    value={category}
-                    icon="tag-outline"
-                    onPress={() => setActivePicker('category')}
-                  />
-                  <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                  {/* Categoria - não mostrar para transferências */}
+                  {type !== 'transfer' && (
+                    <>
+                      <SelectField
+                        label="Categoria"
+                        value={categoryName}
+                        icon="tag-outline"
+                        onPress={() => setActivePicker('category')}
+                      />
+                      <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                    </>
+                  )}
 
                   {/* Conta */}
                   {type === 'transfer' ? (
                     <>
                       <SelectField
                         label="De (conta origem)"
-                        value={account}
+                        value={accountName || 'Selecione'}
                         icon="bank-transfer-out"
                         onPress={() => setActivePicker('account')}
                       />
                       <View style={[styles.divider, { backgroundColor: colors.border }]} />
                       <SelectField
                         label="Para (conta destino)"
-                        value={toAccount}
+                        value={toAccountName || 'Selecione'}
                         icon="bank-transfer-in"
                         onPress={() => setActivePicker('toAccount')}
                       />
@@ -566,8 +819,8 @@ export default function AddTransactionModal({
                   ) : (
                     <SelectField
                       label={type === 'despesa' ? 'Pago com' : 'Recebido em'}
-                      value={account}
-                      icon="bank-outline"
+                      value={useCreditCard ? creditCardName : (accountName || 'Selecione')}
+                      icon={useCreditCard ? 'credit-card' : 'bank-outline'}
                       onPress={() => setActivePicker('account')}
                     />
                   )}
@@ -596,14 +849,16 @@ export default function AddTransactionModal({
               <View style={[styles.buttonContainer, { backgroundColor: colors.bg }]}>
                 <Pressable
                   onPress={handleSave}
+                  disabled={saving}
                   style={({ pressed }) => [
                     styles.saveButton,
                     { backgroundColor: headerColor },
                     pressed && { opacity: 0.9 },
+                    saving && { opacity: 0.6 },
                   ]}
                 >
-                  <MaterialCommunityIcons name="check" size={20} color="#fff" />
-                  <Text style={styles.saveButtonText}>Confirmar</Text>
+                  <MaterialCommunityIcons name={saving ? 'loading' : 'check'} size={20} color="#fff" />
+                  <Text style={styles.saveButtonText}>{saving ? 'Salvando...' : 'Confirmar'}</Text>
                 </Pressable>
               </View>
             </View>
@@ -803,8 +1058,25 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
   },
+  pickerOptionWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   pickerOptionText: {
     fontSize: 15,
+  },
+  pickerDivider: {
+    height: 1,
+    marginVertical: spacing.sm,
+    marginHorizontal: spacing.lg,
+  },
+  pickerSectionTitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
   },
   // Custom Date Picker styles
   datePickerContainer: {
