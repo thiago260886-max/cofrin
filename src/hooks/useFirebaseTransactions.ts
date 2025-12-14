@@ -308,3 +308,53 @@ export function useExpensesByCategory(month: number, year: number) {
     refresh: loadExpenses,
   };
 }
+
+// Hook para relatório completo do mês
+export function useMonthReport(month: number, year: number) {
+  const { user } = useAuth();
+  const [report, setReport] = useState<{
+    income: number;
+    expense: number;
+    balance: number;
+    debitExpenses: number;
+    creditExpenses: number;
+    currentSalary: number;
+    totalCreditCardUsage: number;
+    previousMonth: { income: number; expense: number; balance: number };
+    debtPercentage: number;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadReport = useCallback(async () => {
+    if (!user?.uid) {
+      setReport(null);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const data = await transactionService.getMonthReport(user.uid, month, year);
+      setReport(data);
+    } catch (err) {
+      console.error('Erro ao carregar relatório:', err);
+      setError('Erro ao carregar relatório');
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.uid, month, year]);
+
+  useEffect(() => {
+    loadReport();
+  }, [loadReport]);
+
+  return {
+    report,
+    loading,
+    error,
+    refresh: loadReport,
+  };
+}

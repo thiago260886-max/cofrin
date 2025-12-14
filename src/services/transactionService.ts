@@ -763,3 +763,146 @@ export async function countTransactionsByCreditCard(
   const snapshot = await getDocs(q);
   return snapshot.docs.length;
 }
+
+// ==========================================
+// RELATÓRIOS E ANÁLISES
+// ==========================================
+
+// Gastos no débito (despesas sem cartão de crédito)
+export async function getDebitExpenses(
+  userId: string,
+  month: number,
+  year: number
+): Promise<number> {
+  const transactions = await getTransactionsByType(userId, 'expense', month, year);
+  
+  return transactions
+    .filter(t => t.status !== 'cancelled' && !t.creditCardId)
+    .reduce((sum, t) => sum + t.amount, 0);
+}
+
+// Gastos no crédito (despesas com cartão de crédito)
+export async function getCreditExpenses(
+  userId: string,
+  month: number,
+  year: number
+): Promise<number> {
+  const transactions = await getTransactionsByType(userId, 'expense', month, year);
+  
+  return transactions
+    .filter(t => t.status !== 'cancelled' && t.creditCardId)
+    .reduce((sum, t) => sum + t.amount, 0);
+}
+
+// Buscar salário atual (última receita com categoria "Salário")
+export async function getCurrentSalary(userId: string): Promise<number> {
+  const q = query(
+    transactionsRef,
+    where('userId', '==', userId),
+    where('type', '==', 'income'),
+    where('categoryName', '==', 'Salário')
+  );
+
+  const snapshot = await getDocs(q);
+  const salaryTransactions = snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+  })) as Transaction[];
+
+  if (salaryTransactions.length === 0) return 0;
+
+  // Ordenar por data e pegar o mais recente
+  const sorted = salaryTransactions.sort((a, b) => b.date.toMillis() - a.date.toMillis());
+  return sorted[0].amount;
+}
+
+// Gastos futuros previstos (transações pendentes ou recorrentes para próximo mês)
+export async function getPredictedExpenses(
+  userId: string,
+  month: number,
+  year: number
+): Promise<number> {
+  const transactions = await getTransactionsByType(userId, 'expense', month, year);
+  
+  // Soma todas as despesas (pendentes + concluídas) como previsão
+  return transactions
+    .filter(t => t.status !== 'cancelled')
+    .reduce((sum, t) => sum + t.amount, 0);
+}
+
+// Total de uso de cartões de crédito (fatura prevista)
+export async function getTotalCreditCardUsage(userId: string): Promise<number> {
+  // Importar a função para buscar cartões
+  const { getAllCreditCards } = await import('./creditCardService');
+  const cards = await getAllCreditCards(userId);
+  
+  return cards
+    .filter(card => !card.isArchived)
+    .reduce((sum, card) => sum + (card.currentUsed || 0), 0);
+}
+
+// Saldo do mês anterior
+export async function getPreviousMonthBalance(
+  userId: string,
+  currentMonth: number,
+  currentYear: number
+): Promise<{ income: number; expense: number; balance: number }> {
+  // Calcular mês anterior
+  let prevMonth = currentMonth - 1;
+  let prevYear = currentYear;
+  
+  if (prevMonth < 1) {
+    prevMonth = 12;
+    prevYear = currentYear - 1;
+  }
+
+  return getMonthTotals(userId, prevMonth, prevYear);
+}
+
+// Relatório completo do mês
+export async function getMonthReport(
+  userId: string,
+  month: number,
+  year: number
+): Promise<{
+  income: number;
+  expense: number;
+  balance: number;
+  debitExpenses: number;
+  creditExpenses: number;
+  currentSalary: number;
+  totalCreditCardUsage: number;
+  previousMonth: { income: number; expense: number; balance: number };
+  debtPercentage: number;
+}> {
+  const [
+    totals,
+    debitExpenses,
+    creditExpenses,
+    currentSalary,
+    totalCreditCardUsage,
+    previousMonth
+  ] = await Promise.all([
+    getMonthTotals(userId, month, year),
+    getDebitExpenses(userId, month, year),
+    getCreditExpenses(userId, month, year),
+    getCurrentSalary(userId),
+    getTotalCreditCardUsage(userId),
+    getPreviousMonthBalance(userId, month, year)
+  ]);
+
+  // Percentual de dívida em cartão sobre salário
+  const debtPercentage = currentSalary > 0 
+    ? (totalCreditCardUsage / currentSalary) * 100 
+    : 0;
+
+  return {
+    ...totals,
+    debitExpenses,
+    creditExpenses,
+    currentSalary,
+    totalCreditCardUsage,
+    previousMonth,
+    debtPercentage
+  };
+}
