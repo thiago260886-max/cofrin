@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert, RefreshControl } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import TransactionsList from '../components/transactions/TransactionsList';
 import { useTransactions } from '../hooks/useFirebaseTransactions';
 import { useAppTheme } from '../contexts/themeContext';
+import { useTransactionRefresh } from '../contexts/transactionRefreshContext';
 import { formatCurrencyBRL } from '../utils/format';
 import AppHeader from '../components/AppHeader';
 import MainLayout from '../components/MainLayout';
@@ -18,6 +19,7 @@ const MONTHS = [
 
 export default function Launches() {
   const { colors } = useAppTheme();
+  const { refreshKey } = useTransactionRefresh();
   
   // Estado do mês/ano selecionado
   const today = new Date();
@@ -37,6 +39,13 @@ export default function Launches() {
     month: selectedMonth, 
     year: selectedYear 
   });
+
+  // Refresh when refreshKey changes (triggered after saving a new transaction)
+  useEffect(() => {
+    if (refreshKey > 0) {
+      refresh();
+    }
+  }, [refreshKey]);
 
   // Converte transações do Firebase para o formato do TransactionsList
   const listItems = useMemo(() => {

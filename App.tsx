@@ -2,6 +2,7 @@ import RootNavigation from "./src/navigation";
 import { AuthProvider } from "./src/contexts/authContext";
 import { ThemeProvider } from "./src/contexts/themeContext";
 import { TransactionsProvider } from './src/state/transactionsContext';
+import { TransactionRefreshProvider } from './src/contexts/transactionRefreshContext';
 import { Provider as PaperProvider, DefaultTheme } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useMemo } from 'react';
@@ -50,9 +51,11 @@ export default function App() {
         <ThemeProvider>
           <PaperProvider theme={paperTheme}>
             <TransactionsProvider>
-              <AuthProvider>
-                <RootNavigation />
-              </AuthProvider>
+              <TransactionRefreshProvider>
+                <AuthProvider>
+                  <RootNavigation />
+                </AuthProvider>
+              </TransactionRefreshProvider>
             </TransactionsProvider>
           </PaperProvider>
         </ThemeProvider>

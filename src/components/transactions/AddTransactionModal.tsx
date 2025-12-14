@@ -222,6 +222,18 @@ export default function AddTransactionModal({
       return;
     }
 
+    // Validar saldo para transferências e despesas (quando não usar cartão de crédito)
+    if ((type === 'transfer' || (type === 'despesa' && !useCreditCard)) && accountId) {
+      const sourceAccount = activeAccounts.find(a => a.id === accountId);
+      if (sourceAccount && sourceAccount.balance < parsed) {
+        Alert.alert(
+          'Saldo insuficiente', 
+          `Você não tem saldo suficiente na conta "${sourceAccount.name}".\n\nSaldo disponível: R$ ${sourceAccount.balance.toFixed(2).replace('.', ',')}\nValor da ${type === 'transfer' ? 'transferência' : 'despesa'}: R$ ${parsed.toFixed(2).replace('.', ',')}`
+        );
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       // Map local type to Firebase type
