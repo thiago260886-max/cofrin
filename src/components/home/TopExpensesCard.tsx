@@ -1,42 +1,43 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Card, Text, useTheme } from 'react-native-paper';
+import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { palette, spacing, borderRadius } from '../../theme';
+import { useAppTheme } from '../../contexts/themeContext';
+import { spacing, borderRadius, getShadow } from '../../theme';
 
 interface Props { 
   title?: string;
 }
 
 export default function TopExpensesCard({ title = 'Maiores gastos do mês atual' }: Props) {
-  const theme = useTheme();
+  const { colors } = useAppTheme();
 
   return (
-    <Card style={styles.card} mode="elevated">
+    <View style={[styles.card, { backgroundColor: colors.card }, getShadow(colors)]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text variant="titleMedium" style={styles.title}>{title}</Text>
-        <View style={[styles.iconContainer, { backgroundColor: palette.dangerBg }]}>
+        <Text variant="titleMedium" style={[styles.title, { color: colors.text }]}>{title}</Text>
+        <View style={[styles.iconContainer, { backgroundColor: colors.dangerBg }]}>
           <MaterialCommunityIcons 
             name="chart-pie" 
             size={20} 
-            color={palette.danger} 
+            color={colors.expense} 
           />
         </View>
       </View>
 
       {/* Chart placeholder */}
-      <View style={styles.chartContainer}>
+      <View style={[styles.chartContainer, { backgroundColor: colors.grayLight }]}>
         <MaterialCommunityIcons 
           name="chart-donut" 
           size={64} 
-          color={palette.grayLight} 
+          color={colors.border} 
         />
-        <Text variant="bodySmall" style={styles.placeholderText}>
+        <Text variant="bodySmall" style={[styles.placeholderText, { color: colors.textMuted }]}>
           Sem dados suficientes
         </Text>
       </View>
-    </Card>
+    </View>
   );
 }
 
@@ -55,7 +56,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontWeight: '600',
-    color: palette.text,
   },
   iconContainer: {
     width: 36,
@@ -68,11 +68,9 @@ const styles = StyleSheet.create({
     height: 140,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: palette.grayLight,
     borderRadius: borderRadius.md,
   },
   placeholderText: {
-    color: palette.textMuted,
     marginTop: spacing.sm,
   },
 });

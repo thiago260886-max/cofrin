@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Pressable, useWindowDimensions, Platform } from 'react-native';
-import { Card, Text, useTheme, Snackbar } from 'react-native-paper';
+import { View, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
+import { Text, Snackbar } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AddTransactionModal from '../../components/transactions/AddTransactionModal';
 import { useTransactionsState } from '../../state/useTransactions';
 import { formatCurrencyBRL } from '../../utils/format';
-import { palette, spacing, borderRadius } from '../../theme';
+import { useAppTheme } from '../../contexts/themeContext';
+import { spacing, borderRadius, getShadow } from '../../theme';
 
 interface Props {
   username?: string;
@@ -20,7 +21,7 @@ export default function HomeOverview({
   expenses = 0, 
   onCreateTransaction 
 }: Props) {
-  const theme = useTheme();
+  const { colors } = useAppTheme();
   const { width } = useWindowDimensions();
   const isSmallScreen = width < 380;
 
@@ -79,10 +80,10 @@ export default function HomeOverview({
         { opacity: pressed ? 0.8 : 1 }
       ]}
     >
-      <View style={[styles.actionIcon, { backgroundColor: color }]}>
+      <View style={[styles.actionIcon, { backgroundColor: color }, getShadow(colors)]}>
         <MaterialCommunityIcons name={icon as any} size={24} color="#fff" />
       </View>
-      <Text variant="labelSmall" style={styles.actionLabel}>{label}</Text>
+      <Text variant="labelSmall" style={[styles.actionLabel, { color: colors.textSecondary }]}>{label}</Text>
     </Pressable>
   );
 
@@ -99,16 +100,16 @@ export default function HomeOverview({
     align?: 'left' | 'right';
   }) => (
     <View style={[styles.statItem, align === 'right' && styles.statItemRight]}>
-      <Text variant="bodySmall" style={styles.statLabel}>{label}</Text>
+      <Text variant="bodySmall" style={[styles.statLabel, { color: colors.textSecondary }]}>{label}</Text>
       <Text variant="titleMedium" style={[styles.statValue, { color }]}>{value}</Text>
     </View>
   );
 
   return (
     <>
-      <Card style={styles.card} mode="elevated">
+      <View style={[styles.card, { backgroundColor: colors.card }, getShadow(colors)]}>
         {/* Greeting */}
-        <Text variant="headlineSmall" style={styles.greeting}>
+        <Text variant="headlineSmall" style={[styles.greeting, { color: colors.text }]}>
           Olá, {username}
         </Text>
 
@@ -116,41 +117,41 @@ export default function HomeOverview({
         <View style={[styles.actionsRow, isSmallScreen && styles.actionsRowSmall]}>
           <ActionButton
             icon="minus"
-            color={theme.colors.error}
+            color={colors.expense}
             label="DESPESA"
             onPress={() => openModal('despesa')}
           />
           <ActionButton
             icon="plus"
-            color={theme.colors.primary}
+            color={colors.income}
             label="RECEITA"
             onPress={() => openModal('receita')}
           />
           <ActionButton
             icon="swap-horizontal"
-            color="#64748b"
+            color={colors.gray}
             label="TRANSF."
             onPress={() => openModal('transfer')}
           />
         </View>
 
         {/* Stats Section */}
-        <Text variant="labelMedium" style={styles.sectionTitle}>Visão geral</Text>
+        <Text variant="labelMedium" style={[styles.sectionTitle, { color: colors.textMuted }]}>Visão geral</Text>
         
         <View style={styles.statsRow}>
           <StatItem 
             label="Receitas no mês" 
             value={formatCurrencyBRL(revenue)} 
-            color={theme.colors.primary} 
+            color={colors.income} 
           />
           <StatItem 
             label="Despesas no mês" 
             value={formatCurrencyBRL(expenses)} 
-            color={theme.colors.error}
+            color={colors.expense}
             align="right"
           />
         </View>
-      </Card>
+      </View>
 
       <AddTransactionModal
         visible={modalVisible}
@@ -163,6 +164,7 @@ export default function HomeOverview({
         visible={snackbarVisible} 
         onDismiss={() => setSnackbarVisible(false)} 
         duration={2000}
+        style={{ backgroundColor: colors.card }}
       >
         Lançamento salvo com sucesso!
       </Snackbar>
@@ -180,7 +182,6 @@ const styles = StyleSheet.create({
   greeting: {
     fontWeight: '600',
     marginBottom: spacing.lg,
-    color: palette.text,
   },
   actionsRow: {
     flexDirection: 'row',
@@ -200,28 +201,14 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    ...Platform.select({
-      web: {
-        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.15)',
-      },
-      default: {
-        elevation: 3,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 4,
-      },
-    }),
   },
   actionLabel: {
     marginTop: spacing.sm,
-    color: palette.textSecondary,
     fontWeight: '600',
     fontSize: 11,
     letterSpacing: 0.5,
   },
   sectionTitle: {
-    color: palette.textMuted,
     marginBottom: spacing.sm,
     fontWeight: '500',
   },
@@ -236,7 +223,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   statLabel: {
-    color: palette.textSecondary,
     marginBottom: spacing.xs,
   },
   statValue: {

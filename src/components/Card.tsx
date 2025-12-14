@@ -1,27 +1,27 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Card as PaperCard, useTheme } from 'react-native-paper';
-import { spacing, borderRadius, shadows } from '../theme';
+import { useAppTheme } from '../contexts/themeContext';
+import { spacing, borderRadius, getShadow } from '../theme';
 
 interface CardProps {
   children: React.ReactNode;
   style?: any;
-  mode?: 'elevated' | 'outlined' | 'contained';
 }
 
-export default function Card({ children, style, mode = 'elevated' }: CardProps) {
-  const theme = useTheme();
+export default function Card({ children, style }: CardProps) {
+  const { colors } = useAppTheme();
+  
   return (
-    <PaperCard 
-      mode={mode} 
+    <View 
       style={[
         styles.card, 
-        { backgroundColor: theme.colors.surface }, 
+        { backgroundColor: colors.card }, 
+        getShadow(colors),
         style
       ]}
     >
-      <View>{children}</View>
-    </PaperCard>
+      {children}
+    </View>
   );
 }
 
@@ -31,6 +31,5 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     marginHorizontal: spacing.md,
     marginTop: spacing.sm,
-    ...shadows.md,
   },
 });

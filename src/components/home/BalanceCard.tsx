@@ -1,8 +1,9 @@
 import { View, StyleSheet, Pressable } from 'react-native';
-import { Card, Text, useTheme } from 'react-native-paper';
+import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { formatCurrencyBRL } from '../../utils/format';
-import { palette, spacing, borderRadius } from '../../theme';
+import { useAppTheme } from '../../contexts/themeContext';
+import { spacing, borderRadius, getShadow } from '../../theme';
 
 interface Account { 
   name: string; 
@@ -17,19 +18,6 @@ interface Props {
   onAccountPress?: (account: Account) => void;
 }
 
-// Map account types to icons
-const getAccountIcon = (type: string): string => {
-  const typeMap: Record<string, string> = {
-    'conta corrente': 'bank',
-    'conta manual': 'wallet',
-    'carteira': 'wallet',
-    'poupança': 'piggy-bank',
-    'investimento': 'chart-line',
-    'cartão': 'credit-card',
-  };
-  return typeMap[type.toLowerCase()] || 'bank';
-};
-
 // Get avatar background color based on account name
 const getAvatarColor = (name: string): string => {
   const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
@@ -38,7 +26,7 @@ const getAvatarColor = (name: string): string => {
 };
 
 export default function BalanceCard({ balance = 0, accounts = [], onAccountPress }: Props) {
-  const theme = useTheme();
+  const { colors } = useAppTheme();
 
   // Account item component
   const AccountRow = ({ account }: { account: Account }) => {
@@ -50,7 +38,7 @@ export default function BalanceCard({ balance = 0, accounts = [], onAccountPress
         onPress={() => onAccountPress?.(account)}
         style={({ pressed }) => [
           styles.accountRow,
-          { opacity: pressed ? 0.7 : 1 }
+          { backgroundColor: pressed ? colors.grayLight : 'transparent' }
         ]}
       >
         <View style={[styles.accountAvatar, { backgroundColor: `${avatarColor}15` }]}>
@@ -58,11 +46,11 @@ export default function BalanceCard({ balance = 0, accounts = [], onAccountPress
         </View>
         
         <View style={styles.accountInfo}>
-          <Text variant="bodyMedium" style={styles.accountName}>{account.name}</Text>
-          <Text variant="bodySmall" style={styles.accountType}>{account.type}</Text>
+          <Text variant="bodyMedium" style={[styles.accountName, { color: colors.text }]}>{account.name}</Text>
+          <Text variant="bodySmall" style={[styles.accountType, { color: colors.textMuted }]}>{account.type}</Text>
         </View>
         
-        <Text variant="titleSmall" style={styles.accountBalance}>
+        <Text variant="titleSmall" style={[styles.accountBalance, { color: colors.text }]}>
           {formatCurrencyBRL(account.balance)}
         </Text>
       </Pressable>
@@ -70,21 +58,21 @@ export default function BalanceCard({ balance = 0, accounts = [], onAccountPress
   };
 
   return (
-    <Card style={styles.card} mode="elevated">
+    <View style={[styles.card, { backgroundColor: colors.card }, getShadow(colors)]}>
       {/* Header with total balance */}
       <View style={styles.header}>
         <View style={styles.balanceSection}>
-          <Text variant="labelMedium" style={styles.balanceLabel}>Saldo geral</Text>
-          <Text variant="headlineMedium" style={styles.balanceValue}>
+          <Text variant="labelMedium" style={[styles.balanceLabel, { color: colors.textMuted }]}>Saldo geral</Text>
+          <Text variant="headlineMedium" style={[styles.balanceValue, { color: colors.text }]}>
             {formatCurrencyBRL(balance)}
           </Text>
         </View>
         
-        <View style={[styles.balanceIcon, { backgroundColor: `${theme.colors.primary}15` }]}>
+        <View style={[styles.balanceIcon, { backgroundColor: colors.primaryBg }]}>
           <MaterialCommunityIcons 
             name="wallet-outline" 
             size={24} 
-            color={theme.colors.primary} 
+            color={colors.primary} 
           />
         </View>
       </View>
@@ -92,9 +80,9 @@ export default function BalanceCard({ balance = 0, accounts = [], onAccountPress
       {/* Accounts section */}
       {accounts.length > 0 && (
         <>
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
           
-          <Text variant="labelMedium" style={styles.sectionTitle}>Minhas contas</Text>
+          <Text variant="labelMedium" style={[styles.sectionTitle, { color: colors.textMuted }]}>Minhas contas</Text>
           
           <View style={styles.accountsList}>
             {accounts.map((account, index) => (
@@ -103,7 +91,7 @@ export default function BalanceCard({ balance = 0, accounts = [], onAccountPress
           </View>
         </>
       )}
-    </Card>
+    </View>
   );
 }
 
@@ -123,13 +111,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   balanceLabel: {
-    color: palette.textMuted,
     marginBottom: spacing.xs,
     fontWeight: '500',
   },
   balanceValue: {
     fontWeight: '700',
-    color: palette.text,
   },
   balanceIcon: {
     width: 48,
@@ -140,11 +126,9 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: palette.grayLight,
     marginVertical: spacing.md,
   },
   sectionTitle: {
-    color: palette.textMuted,
     marginBottom: spacing.sm,
     fontWeight: '500',
   },
@@ -175,14 +159,11 @@ const styles = StyleSheet.create({
   },
   accountName: {
     fontWeight: '600',
-    color: palette.text,
   },
   accountType: {
-    color: palette.textMuted,
     marginTop: 2,
   },
   accountBalance: {
     fontWeight: '700',
-    color: palette.text,
   },
 });

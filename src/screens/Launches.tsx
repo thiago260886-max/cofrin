@@ -7,6 +7,7 @@ import { useAppTheme } from '../contexts/themeContext';
 import { formatCurrencyBRL } from '../utils/format';
 import AppHeader from '../components/AppHeader';
 import MainLayout from '../components/MainLayout';
+import { spacing, borderRadius, getShadow } from '../theme';
 
 export default function Launches() {
   const [items, setItems] = useTransactionsState();
@@ -40,44 +41,117 @@ export default function Launches() {
     };
   }, []);
 
-  
-
   return (
     <MainLayout>
-      <View style={{ flex: 1, backgroundColor: colors.bg }}>
-        <ScrollView contentContainerStyle={{ paddingBottom: 18 }} keyboardShouldPersistTaps="handled">
+      <View style={[styles.root, { backgroundColor: colors.bg }]}>
+        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <AppHeader />
-          <View style={{ alignItems: 'center', paddingVertical: 12 }}>
-            <View style={{ width: '100%', maxWidth: 980, paddingHorizontal: 12 }}>
+          <View style={styles.content}>
+            <View style={styles.maxWidth}>
               <Text style={[styles.title, { color: colors.text }]}>Fluxo de caixa</Text>
-          {items.length === 0 ? (
-            <View style={{ padding: 16, backgroundColor: colors.card, borderRadius: 12, elevation: 2 }}>
-              <Text style={{ fontWeight: '700', marginBottom: 8, color: colors.text }}>Nenhum lançamento encontrado</Text>
-              <Text style={{ color: colors.textMuted }}>Toque no botão + para adicionar sua primeira despesa, receita ou transferência.</Text>
-            </View>
-          ) : (
-            <TransactionsList items={items} />
-          )}
-          <View style={{ height: 48 }} />
+              
+              {items.length === 0 ? (
+                <View style={[styles.emptyCard, { backgroundColor: colors.card }, getShadow(colors)]}>
+                  <Text style={[styles.emptyTitle, { color: colors.text }]}>Nenhum lançamento encontrado</Text>
+                  <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+                    Toque no botão + para adicionar sua primeira despesa, receita ou transferência.
+                  </Text>
+                </View>
+              ) : (
+                <View style={[styles.listCard, { backgroundColor: colors.card }, getShadow(colors)]}>
+                  <TransactionsList items={items} />
+                </View>
+              )}
+              
+              <View style={{ height: 48 }} />
             </View>
           </View>
         </ScrollView>
 
-        <View style={[styles.summaryBar, { backgroundColor: colors.card }]}>
-        <View style={styles.summaryItem}><Text style={{ color: colors.primary, fontWeight: '700' }}>{formatCurrencyBRL(totals.income)}</Text><Text style={[styles.summaryLabel, { color: colors.textMuted }]}>entradas</Text></View>
-        <View style={styles.summaryItem}><Text style={{ color: '#ef4444', fontWeight: '700' }}>{formatCurrencyBRL(-totals.expenses)}</Text><Text style={[styles.summaryLabel, { color: colors.textMuted }]}>saídas</Text></View>
-        <View style={styles.summaryItem}><Text style={{ color: colors.primaryDark, fontWeight: '700' }}>{formatCurrencyBRL(totals.balance)}</Text><Text style={[styles.summaryLabel, { color: colors.textMuted }]}>saldo</Text></View>
-      </View>
-
+        {/* Summary Bar */}
+        <View style={[styles.summaryBar, { backgroundColor: colors.card }, getShadow(colors, 'lg')]}>
+          <View style={styles.summaryItem}>
+            <Text style={[styles.summaryValue, { color: colors.income }]}>{formatCurrencyBRL(totals.income)}</Text>
+            <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>entradas</Text>
+          </View>
+          <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
+          <View style={styles.summaryItem}>
+            <Text style={[styles.summaryValue, { color: colors.expense }]}>{formatCurrencyBRL(-totals.expenses)}</Text>
+            <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>saídas</Text>
+          </View>
+          <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
+          <View style={styles.summaryItem}>
+            <Text style={[styles.summaryValue, { color: colors.primary }]}>{formatCurrencyBRL(totals.balance)}</Text>
+            <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>saldo</Text>
+          </View>
+        </View>
       </View>
     </MainLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: 20, fontWeight: '700' },
-  summaryBar: { position: 'absolute', left: 12, right: 12, bottom: 84, borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 4, padding: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  summaryItem: { alignItems: 'center', flex: 1 },
-  summaryLabel: { fontSize: 11 },
-  fab: { position: 'absolute', right: 22, bottom: 18, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
+  root: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 140,
+  },
+  content: {
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+  },
+  maxWidth: {
+    width: '100%',
+    maxWidth: 980,
+    paddingHorizontal: spacing.md,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '700',
+    marginBottom: spacing.md,
+  },
+  emptyCard: {
+    padding: spacing.lg,
+    borderRadius: borderRadius.lg,
+  },
+  emptyTitle: {
+    fontWeight: '700',
+    marginBottom: spacing.sm,
+    fontSize: 16,
+  },
+  emptyText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  listCard: {
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+  },
+  summaryBar: {
+    position: 'absolute',
+    left: spacing.md,
+    right: spacing.md,
+    bottom: 90,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  summaryItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  summaryDivider: {
+    width: 1,
+    height: 32,
+  },
+  summaryValue: {
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  summaryLabel: {
+    fontSize: 11,
+    marginTop: 2,
+  },
 });
