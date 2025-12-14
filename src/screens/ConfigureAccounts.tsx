@@ -27,8 +27,8 @@ const ACCOUNT_TYPES: AccountTypeOption[] = [
 ];
 
 const ACCOUNT_ICONS = [
-  'bank', 'bank-outline', 'piggy-bank', 'wallet', 'wallet-outline',
-  'cash', 'credit-card', 'safe', 'chart-line', 'bitcoin',
+  'bank', 'piggy-bank', 'wallet',
+  'cash','chart-line', 'bitcoin',
 ];
 
 export default function ConfigureAccounts({ navigation }: any) {
