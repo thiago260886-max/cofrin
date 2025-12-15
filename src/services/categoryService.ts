@@ -105,6 +105,12 @@ export async function updateCategory(
   categoryId: string,
   data: UpdateCategoryInput
 ): Promise<void> {
+  // Verificar se é a categoria protegida
+  const category = await getCategoryById(categoryId);
+  if (category?.isDefault && category.name === 'Renda') {
+    throw new Error('A categoria Renda não pode ser editada pois é usada para cálculos de relatórios.');
+  }
+  
   const docRef = doc(db, COLLECTIONS.CATEGORIES, categoryId);
   await updateDoc(docRef, {
     ...data,
@@ -114,6 +120,12 @@ export async function updateCategory(
 
 // Deletar categoria
 export async function deleteCategory(categoryId: string): Promise<void> {
+  // Verificar se é a categoria protegida
+  const category = await getCategoryById(categoryId);
+  if (category?.isDefault && category.name === 'Renda') {
+    throw new Error('A categoria Renda não pode ser removida pois é usada para cálculos de relatórios.');
+  }
+  
   const docRef = doc(db, COLLECTIONS.CATEGORIES, categoryId);
   await deleteDoc(docRef);
 }

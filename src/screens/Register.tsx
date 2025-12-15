@@ -73,8 +73,7 @@ export default function Register({ navigation }: any) {
     setLoading(true);
     try {
       await register(email.trim(), password);
-      showAlert("Conta criada com sucesso!");
-      navigation.goBack();
+      // Usuário será redirecionado automaticamente pelo contexto de autenticação
     } catch (err: any) {
       const code: string = err?.code || "";
       let message = err?.message || "Ocorreu um erro ao tentar registrar a conta.";

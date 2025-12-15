@@ -47,6 +47,8 @@ export interface Account extends BaseDocument {
   color?: string;
   includeInTotal: boolean; // Se inclui no saldo geral
   isArchived: boolean;
+  isDefault?: boolean; // Conta padrão criada pelo sistema
+  initialBalanceSet?: boolean; // Se o saldo inicial já foi definido pelo usuário
 }
 
 export type CreateAccountInput = Omit<Account, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'balance'> & {
@@ -199,22 +201,19 @@ export interface UserPreferences {
 
 // Categorias padrão de despesa
 export const DEFAULT_EXPENSE_CATEGORIES: Omit<Category, 'id' | 'userId' | 'createdAt' | 'updatedAt'>[] = [
-  { name: 'Alimentação', icon: 'food', type: 'expense', isDefault: true },
-  { name: 'Transporte', icon: 'bus', type: 'expense', isDefault: true },
-  { name: 'Moradia', icon: 'home', type: 'expense', isDefault: true },
-  { name: 'Saúde', icon: 'hospital-box', type: 'expense', isDefault: true },
-  { name: 'Educação', icon: 'school', type: 'expense', isDefault: true },
-  { name: 'Compras', icon: 'shopping', type: 'expense', isDefault: true },
-  { name: 'Lazer', icon: 'gamepad-variant', type: 'expense', isDefault: true },
-  { name: 'Outros', icon: 'dots-horizontal', type: 'expense', isDefault: true },
+  { name: 'Alimentação', icon: 'food', type: 'expense' },
+  { name: 'Transporte', icon: 'bus', type: 'expense' },
+  { name: 'Moradia', icon: 'home', type: 'expense' },
+  { name: 'Saúde', icon: 'hospital-box', type: 'expense' },
+  { name: 'Educação', icon: 'school', type: 'expense' },
+  { name: 'Compras', icon: 'shopping', type: 'expense' },
+  { name: 'Lazer', icon: 'gamepad-variant', type: 'expense' },
+  { name: 'Outros', icon: 'dots-horizontal', type: 'expense' },
 ];
 
 // Categorias padrão de receita
 export const DEFAULT_INCOME_CATEGORIES: Omit<Category, 'id' | 'userId' | 'createdAt' | 'updatedAt'>[] = [
-  { name: 'Salário', icon: 'briefcase', type: 'income', isDefault: true },
-  { name: 'Freelance', icon: 'cash-multiple', type: 'income', isDefault: true },
-  { name: 'Investimentos', icon: 'chart-line', type: 'income', isDefault: true },
-  { name: 'Outros', icon: 'dots-horizontal', type: 'income', isDefault: true },
+  { name: 'Renda', icon: 'cash-multiple', type: 'income', isDefault: true },
 ];
 
 // Ícones disponíveis para categorias

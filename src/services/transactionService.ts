@@ -833,13 +833,13 @@ export async function getCreditExpenses(
     .reduce((sum, t) => sum + t.amount, 0);
 }
 
-// Buscar salário atual (última receita com categoria "Salário")
+// Buscar renda atual (última receita com categoria "Renda")
 export async function getCurrentSalary(userId: string): Promise<number> {
   const q = query(
     transactionsRef,
     where('userId', '==', userId),
     where('type', '==', 'income'),
-    where('categoryName', '==', 'Salário')
+    where('categoryName', '==', 'Renda')
   );
 
   const snapshot = await getDocs(q);

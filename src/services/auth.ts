@@ -7,9 +7,20 @@ import {
 } from "firebase/auth";
 
 import { auth } from "./firebase";
+import { createDefaultCategories } from "./categoryService";
+import { createDefaultAccount } from "./accountService";
 
-export function register(email: string, password: string) {
-  return createUserWithEmailAndPassword(auth, email, password);
+export async function register(email: string, password: string) {
+  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  const userId = userCredential.user.uid;
+  
+  // Criar categorias e conta padrão para o novo usuário
+  await Promise.all([
+    createDefaultCategories(userId),
+    createDefaultAccount(userId),
+  ]);
+  
+  return userCredential;
 }
 
 export function login(email: string, password: string) {

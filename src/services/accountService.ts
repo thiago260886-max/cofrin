@@ -3,22 +3,22 @@
 // ==========================================
 
 import {
-    collection,
-    doc,
-    addDoc,
-    updateDoc,
-    deleteDoc,
-    getDocs,
-    getDoc,
-    query,
-    where, Timestamp,
-    increment
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  getDocs,
+  getDoc,
+  query,
+  where, Timestamp,
+  increment
 } from 'firebase/firestore';
 import { db, COLLECTIONS } from './firebase';
 import {
-    Account,
-    CreateAccountInput,
-    UpdateAccountInput,
+  Account,
+  CreateAccountInput,
+  UpdateAccountInput,
 } from '../types/firebase';
 
 const accountsRef = collection(db, COLLECTIONS.ACCOUNTS);
@@ -161,4 +161,58 @@ export async function getTotalBalance(userId: string): Promise<number> {
   return accounts
     .filter(acc => acc.includeInTotal)
     .reduce((total, acc) => total + acc.balance, 0);
+}
+
+// Criar conta padrão para novo usuário
+export async function createDefaultAccount(userId: string): Promise<Account> {
+  const now = Timestamp.now();
+  const defaultAccountData = {
+    name: 'Minha Conta',
+    type: 'checking' as const,
+    balance: 0,
+    initialBalance: 0,
+    icon: 'wallet',
+    includeInTotal: true,
+    isArchived: false,
+    isDefault: true,
+    initialBalanceSet: false,
+    userId,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const docRef = await addDoc(accountsRef, defaultAccountData);
+
+  return {
+    id: docRef.id,
+    ...defaultAccountData,
+  } as Account;
+}
+
+// Definir saldo inicial da conta padrão (apenas uma vez)
+export async function setInitialBalance(
+  accountId: string,
+  initialBalance: number
+): Promise<void> {
+  const account = await getAccountById(accountId);
+  
+  if (!account) {
+    throw new Error('Conta não encontrada');
+  }
+  
+  if (!account.isDefault) {
+    throw new Error('Esta operação só é permitida para contas padrão');
+  }
+  
+  if (account.initialBalanceSet) {
+    throw new Error('O saldo inicial já foi definido e não pode ser alterado novamente');
+  }
+
+  const docRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
+  await updateDoc(docRef, {
+    initialBalance,
+    balance: initialBalance,
+    initialBalanceSet: true,
+    updatedAt: Timestamp.now(),
+  });
 }

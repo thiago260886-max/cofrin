@@ -233,7 +233,7 @@ export default function Reports() {
               </View>
               
               <Text style={[styles.cardDescription, { color: colors.textMuted }]}>
-                Valor total atualmente utilizado nos cartões de crédito (fatura a pagar)
+                Tudo que você registrar de receita na categoria Renda será usado para medir quanto da sua renda mensal está comprometida com o cartão de crédito.
               </Text>
 
               <View style={styles.futureRow}>
@@ -249,30 +249,45 @@ export default function Reports() {
                 {report?.currentSalary ? (
                   <View style={styles.futureItem}>
                     <Text style={[styles.futureLabel, { color: colors.textMuted }]}>
-                      % do salário
+                      % da renda
                     </Text>
                     <Text style={[
                       styles.futureValue, 
-                      { color: (report.debtPercentage >= 30) ? colors.expense : colors.text }
+                      { 
+                        color: report.debtPercentage <= 30 
+                          ? colors.income 
+                          : report.debtPercentage <= 40 
+                          ? colors.warning 
+                          : colors.expense 
+                      }
                     ]}>
-                      {report.debtPercentage.toFixed(1)}%
+                      {report.debtPercentage <= 30 ? '🟢' : report.debtPercentage <= 40 ? '🟡' : '🔴'} {report.debtPercentage.toFixed(1)}%
                     </Text>
                   </View>
                 ) : null}
               </View>
 
               {report?.currentSalary ? (
-                <View style={[styles.salaryInfo, { backgroundColor: colors.grayLight }]}>
-                  <MaterialCommunityIcons name="briefcase" size={16} color={colors.textMuted} />
-                  <Text style={[styles.salaryText, { color: colors.textMuted }]}>
-                    Salário atual: {formatCurrencyBRL(report.currentSalary)}
-                  </Text>
+                <View style={[styles.healthZone, { backgroundColor: colors.grayLight }]}>
+                  <View style={styles.healthZoneHeader}>
+                    <MaterialCommunityIcons name="cash-multiple" size={16} color={colors.textMuted} />
+                    <Text style={[styles.salaryText, { color: colors.textMuted }]}>
+                      Renda mensal: {formatCurrencyBRL(report.currentSalary)}
+                    </Text>
+                  </View>
+                  <View style={styles.healthZoneInfo}>
+                    <Text style={[styles.healthZoneText, { color: colors.textMuted }]}>
+                      🟢 <Text style={{ fontWeight: '600' }}>Até 30%</Text> = Zona saudável (recomendado){"\n"}
+                      🟡 <Text style={{ fontWeight: '600' }}>30-40%</Text> = Zona de atenção{"\n"}
+                      🔴 <Text style={{ fontWeight: '600' }}>Acima de 40%</Text> = Zona de risco
+                    </Text>
+                  </View>
                 </View>
               ) : (
                 <View style={[styles.salaryInfo, { backgroundColor: colors.grayLight }]}>
                   <MaterialCommunityIcons name="information" size={16} color={colors.textMuted} />
                   <Text style={[styles.salaryText, { color: colors.textMuted }]}>
-                    Cadastre uma receita com categoria "Salário" para ver o percentual comprometido
+                    Cadastre uma receita com categoria "Renda" para ver o percentual comprometido e acompanhar a saúde financeira
                   </Text>
                 </View>
               )}
@@ -549,6 +564,24 @@ const styles = StyleSheet.create({
   salaryText: {
     fontSize: 12,
     flex: 1,
+  },
+  healthZone: {
+    padding: spacing.sm,
+    borderRadius: borderRadius.sm,
+    gap: spacing.xs,
+  },
+  healthZoneHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  healthZoneInfo: {
+    paddingLeft: spacing.sm,
+  },
+  healthZoneText: {
+    fontSize: 11,
+    lineHeight: 16,
   },
   evolutionChart: {
     gap: spacing.md,
