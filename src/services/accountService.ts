@@ -172,7 +172,7 @@ export async function getTotalBalance(userId: string): Promise<number> {
 export async function createDefaultAccount(userId: string): Promise<Account> {
   const now = Timestamp.now();
   const defaultAccountData = {
-    name: 'Minha Conta',
+    name: 'Conta principal',
     type: 'checking' as const,
     balance: 0,
     initialBalance: 0,

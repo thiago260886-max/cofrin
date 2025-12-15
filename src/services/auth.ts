@@ -15,10 +15,16 @@ export async function register(email: string, password: string) {
   const userId = userCredential.user.uid;
   
   // Criar categorias e conta padrão para o novo usuário
-  await Promise.all([
-    createDefaultCategories(userId),
-    createDefaultAccount(userId),
-  ]);
+  try {
+    await Promise.all([
+      createDefaultCategories(userId),
+      createDefaultAccount(userId),
+    ]);
+    console.log("Conta padrão e categorias criadas com sucesso para:", userId);
+  } catch (error) {
+    console.error("Erro ao criar dados iniciais para novo usuário:", error);
+    // Mesmo com erro, continuamos o registro
+  }
   
   return userCredential;
 }

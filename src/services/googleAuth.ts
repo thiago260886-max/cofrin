@@ -3,6 +3,8 @@ import * as Google from "expo-auth-session/providers/google";
 import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
 import { useEffect } from "react";
 import { auth } from "./firebase";
+import { createDefaultCategories } from "./categoryService";
+import { createDefaultAccount } from "./accountService";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -28,8 +30,26 @@ export function useGoogleAuth(onLogin?: () => void) {
       const credential = GoogleAuthProvider.credential(id_token);
 
       signInWithCredential(auth, credential)
-        .then(() => {
+        .then(async (userCredential) => {
           console.log("Login Google OK!");
+          
+          // Verificar se é um novo usuário
+          const isNewUser = userCredential.user.metadata.creationTime === userCredential.user.metadata.lastSignInTime;
+          
+          if (isNewUser) {
+            console.log("Novo usuário Google, criando dados iniciais...");
+            const userId = userCredential.user.uid;
+            try {
+              await Promise.all([
+                createDefaultCategories(userId),
+                createDefaultAccount(userId),
+              ]);
+              console.log("Dados iniciais criados com sucesso!");
+            } catch (error) {
+              console.error("Erro ao criar dados iniciais:", error);
+            }
+          }
+          
           if (mounted && onLogin) onLogin();
         })
         .catch((err) => {

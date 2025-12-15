@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/authContext';
+import { useTransactionRefresh } from '../contexts/transactionRefreshContext';
 import {
     Account,
     CreateAccountInput,
@@ -13,6 +14,7 @@ import * as accountService from '../services/accountService';
 
 export function useAccounts(includeArchived: boolean = false) {
   const { user } = useAuth();
+  const { refreshKey } = useTransactionRefresh();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,10 +44,10 @@ export function useAccounts(includeArchived: boolean = false) {
     }
   }, [user?.uid, includeArchived]);
 
-  // Carregar ao montar
+  // Carregar ao montar e quando refreshKey mudar
   useEffect(() => {
     loadAccounts();
-  }, [loadAccounts]);
+  }, [loadAccounts, refreshKey]);
 
   // Criar conta
   const createAccount = async (data: CreateAccountInput): Promise<Account | null> => {

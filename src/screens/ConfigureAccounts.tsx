@@ -11,6 +11,7 @@ import SettingsFooter from "../components/SettingsFooter";
 import { AccountType, ACCOUNT_TYPE_LABELS, Account } from "../types/firebase";
 import { formatCurrencyBRL } from "../utils/format";
 import { deleteTransactionsByAccount, countTransactionsByAccount } from "../services/transactionService";
+import * as transactionService from "../services/transactionService";
 import { setAccountBalance } from "../services/accountService";
 import { useTransactionRefresh } from "../contexts/transactionRefreshContext";
 
@@ -44,6 +45,9 @@ export default function ConfigureAccounts({ navigation }: any) {
   const [initialBalance, setInitialBalance] = useState('');
   const [includeInTotal, setIncludeInTotal] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [adjustBalanceValue, setAdjustBalanceValue] = useState('');
+  const [adjustBalanceModalVisible, setAdjustBalanceModalVisible] = useState(false);
 
   // Estado para modal de edição
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -149,6 +153,60 @@ export default function ConfigureAccounts({ navigation }: any) {
       }
     } catch (error) {
       showAlert('Erro', 'Ocorreu um erro ao atualizar a conta', [{ text: 'OK', style: 'default' }]);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // Ajustar saldo da conta (cria transação de ajuste)
+  async function handleAdjustBalance() {
+    if (!editingAccount) return;
+    setAdjustBalanceValue(editingAccount.balance.toFixed(2).replace('.', ','));
+    setAdjustBalanceModalVisible(true);
+  }
+
+  async function performBalanceAdjustment() {
+    if (!editingAccount || !user?.uid) return;
+    
+    const newBalance = parseBalance(adjustBalanceValue);
+    const currentBalance = editingAccount.balance;
+    const difference = newBalance - currentBalance;
+    
+    if (difference === 0) {
+      showAlert('Aviso', 'O saldo informado é igual ao saldo atual.', [{ text: 'OK', style: 'default' }]);
+      return;
+    }
+    
+    setAdjustBalanceModalVisible(false);
+    setSaving(true);
+    try {
+      // Criar transação de ajuste
+      await transactionService.createBalanceAdjustment(
+        user.uid,
+        editingAccount.id,
+        editingAccount.name,
+        currentBalance,
+        newBalance
+      );
+      
+      // Atualizar o saldo da conta
+      await setAccountBalance(editingAccount.id, newBalance);
+      
+      // Fechar modais e limpar estado
+      setEditModalVisible(false);
+      setEditingAccount(null);
+      
+      // Notificar refresh para atualizar toda a UI
+      triggerRefresh();
+      
+      const adjustType = difference > 0 ? 'Crédito' : 'Débito';
+      showAlert(
+        'Saldo ajustado', 
+        `${adjustType} de ${formatCurrencyBRL(Math.abs(difference))} aplicado.\n\nNovo saldo: ${formatCurrencyBRL(newBalance)}`,
+        [{ text: 'OK', style: 'default' }]
+      );
+    } catch (err) {
+      showAlert('Erro', 'Ocorreu um erro ao ajustar o saldo', [{ text: 'OK', style: 'default' }]);
     } finally {
       setSaving(false);
     }
@@ -526,7 +584,26 @@ export default function ConfigureAccounts({ navigation }: any) {
 
             {/* Saldo inicial */}
             <View style={styles.formGroup}>
-              <Text style={[styles.label, { color: colors.text }]}>Saldo inicial</Text>
+              <View style={styles.labelRow}>
+                <Text style={[styles.label, { color: colors.text }]}>Saldo inicial</Text>
+                <Pressable 
+                  onPress={() => setShowTooltip(!showTooltip)}
+                  hitSlop={8}
+                >
+                  <MaterialCommunityIcons 
+                    name="information-outline" 
+                    size={18} 
+                    color={colors.primary} 
+                  />
+                </Pressable>
+              </View>
+              {showTooltip && (
+                <View style={[styles.tooltip, { backgroundColor: colors.primaryBg, borderColor: colors.primary }]}>
+                  <Text style={[styles.tooltipText, { color: colors.text }]}>
+                    O saldo inicial representa quanto dinheiro você já tinha nessa conta ao começar a usar o app. Esse valor não é uma receita.
+                  </Text>
+                </View>
+              )}
               <View style={[styles.inputContainer, { borderColor: colors.border }]}>
                 <Text style={[styles.currency, { color: colors.textMuted }]}>R$</Text>
                 <TextInput
@@ -686,6 +763,24 @@ export default function ConfigureAccounts({ navigation }: any) {
 
               {/* Ações */}
               <View style={styles.modalActionsColumn}>
+                {/* Botão de Ajustar Saldo */}
+                <Pressable
+                  onPress={handleAdjustBalance}
+                  style={({ pressed }) => [
+                    styles.resetButton,
+                    { backgroundColor: colors.primary + '15', borderColor: colors.primary },
+                    pressed && { opacity: 0.7 },
+                  ]}
+                >
+                  <MaterialCommunityIcons name="tune" size={20} color={colors.primary} />
+                  <View style={styles.resetButtonText}>
+                    <Text style={[styles.actionButtonText, { color: colors.primary }]}>Ajustar saldo da conta</Text>
+                    <Text style={[styles.resetHint, { color: colors.textMuted }]}>
+                      Corrige o saldo sem alterar o histórico
+                    </Text>
+                  </View>
+                </Pressable>
+
                 {/* Botão de Resetar */}
                 <Pressable
                   onPress={handleResetAccount}
@@ -740,6 +835,68 @@ export default function ConfigureAccounts({ navigation }: any) {
           </View>
         </View>
       </Modal>
+
+      {/* Modal de Ajuste de Saldo */}
+      <Modal
+        visible={adjustBalanceModalVisible}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setAdjustBalanceModalVisible(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay}
+          onPress={() => setAdjustBalanceModalVisible(false)}
+        >
+          <Pressable 
+            style={[styles.adjustBalanceModal, { backgroundColor: colors.card }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <Text style={[styles.adjustBalanceTitle, { color: colors.text }]}>
+              Ajustar saldo da conta
+            </Text>
+            <Text style={[styles.adjustBalanceSubtitle, { color: colors.textMuted }]}>
+              {editingAccount?.name}
+            </Text>
+            <Text style={[styles.adjustBalanceInfo, { color: colors.textMuted }]}>
+              Saldo atual: {formatCurrencyBRL(editingAccount?.balance || 0)}
+            </Text>
+            <Text style={[styles.adjustBalanceLabel, { color: colors.text }]}>
+              Qual é o saldo real desta conta hoje?
+            </Text>
+            <View style={[styles.inputContainer, { borderColor: colors.border }]}>
+              <Text style={[styles.currency, { color: colors.textMuted }]}>R$</Text>
+              <TextInput
+                value={adjustBalanceValue}
+                onChangeText={(v) => setAdjustBalanceValue(formatCurrency(v))}
+                placeholder="0,00"
+                placeholderTextColor={colors.textMuted}
+                keyboardType="numeric"
+                style={[styles.input, { color: colors.text }]}
+                autoFocus
+              />
+            </View>
+            <View style={styles.adjustBalanceActions}>
+              <Pressable
+                onPress={() => setAdjustBalanceModalVisible(false)}
+                style={[styles.adjustBalanceButton, { borderColor: colors.border }]}
+              >
+                <Text style={[styles.adjustBalanceButtonText, { color: colors.text }]}>
+                  Cancelar
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={performBalanceAdjustment}
+                style={[styles.adjustBalanceButton, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+              >
+                <Text style={[styles.adjustBalanceButtonText, { color: '#fff' }]}>
+                  Confirmar
+                </Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <CustomAlert
         visible={alertState.visible}
         title={alertState.title}
@@ -962,6 +1119,22 @@ const styles = StyleSheet.create({
   checkboxLabel: {
     fontSize: 14,
   },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
+  },
+  tooltip: {
+    padding: spacing.sm,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+  },
+  tooltipText: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
   createButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1057,6 +1230,49 @@ const styles = StyleSheet.create({
   },
   balanceText: {
     fontSize: 16,
+    fontWeight: '600',
+  },
+  adjustBalanceModal: {
+    backgroundColor: 'white',
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    maxWidth: 400,
+    width: '90%',
+  },
+  adjustBalanceTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: spacing.sm,
+  },
+  adjustBalanceSubtitle: {
+    fontSize: 14,
+    marginBottom: spacing.md,
+    opacity: 0.7,
+  },
+  adjustBalanceInfo: {
+    fontSize: 13,
+    marginBottom: spacing.lg,
+    opacity: 0.6,
+    fontStyle: 'italic',
+  },
+  adjustBalanceLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: spacing.xs,
+  },
+  adjustBalanceActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.lg,
+  },
+  adjustBalanceButton: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+  },
+  adjustBalanceButtonText: {
+    fontSize: 14,
     fontWeight: '600',
   },
 });
