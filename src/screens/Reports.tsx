@@ -1,13 +1,18 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
+import { useAuth } from '../contexts/authContext';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppTheme } from '../contexts/themeContext';
 import AppHeader from '../components/AppHeader';
 import MainLayout from '../components/MainLayout';
 import ExpensesByCategoryCard from '../components/ExpensesByCategoryCard';
+import GoalProgressCard from '../components/GoalProgressCard';
 import { spacing, borderRadius, getShadow } from '../theme';
 import { formatCurrencyBRL } from '../utils/format';
 import { useMonthReport, useExpensesByCategory } from '../hooks/useFirebaseTransactions';
+import { useGoal } from '../hooks/useGoal';
+import CreateGoalModal from '../components/CreateGoalModal';
+import * as goalService from '../services/goalService';
 
 // Componente de stat card
 interface StatCardProps {
@@ -70,6 +75,7 @@ function ProgressBar({ label, value, maxValue, color, colors }: ProgressBarProps
 }
 
 export default function Reports() {
+  const { user } = useAuth();
   const { colors } = useAppTheme();
   const { width } = useWindowDimensions();
   const isNarrow = width < 700;
@@ -82,6 +88,40 @@ export default function Reports() {
   // Dados do relatório
   const { report, loading } = useMonthReport(currentMonth, currentYear);
   const { expenses: categoryExpenses } = useExpensesByCategory(currentMonth, currentYear);
+
+  // Meta financeira
+  const { goal, progressPercentage, refresh: refreshGoal } = useGoal();
+
+  // Estado do modal de criação de meta
+  const [showGoalModal, setShowGoalModal] = useState(false);
+
+  // Criar ou atualizar meta
+  const handleSaveGoal = async (data: {
+    name: string;
+    targetAmount: number;
+    timeframe: 'short' | 'medium' | 'long';
+    icon: string;
+  }) => {
+    if (!user) return;
+
+    if (goal) {
+      await goalService.updateGoal(goal.id, {
+        name: data.name,
+        targetAmount: data.targetAmount,
+        timeframe: data.timeframe,
+        icon: data.icon,
+      });
+    } else {
+      await goalService.createGoal(user.uid, {
+        name: data.name,
+        targetAmount: data.targetAmount,
+        timeframe: data.timeframe,
+        icon: data.icon,
+        isActive: true,
+      });
+    }
+    refreshGoal();
+  };
 
   // Nomes dos meses
   const monthNames = [
@@ -319,7 +359,7 @@ export default function Reports() {
               </View>
               <View style={[styles.statsRow, { flex: isNarrow ? undefined : 1 }]}>
                 <StatCard
-                  title="Gastos no débito"
+                  title="Gastos débito"
                   value={formatCurrencyBRL(report?.debitExpenses || 0)}
                   icon="wallet"
                   iconBg={colors.primaryBg}
@@ -327,7 +367,7 @@ export default function Reports() {
                   colors={colors}
                 />
                 <StatCard
-                  title="Gastos no crédito"
+                  title="Gastos crédito"
                   value={formatCurrencyBRL(report?.creditExpenses || 0)}
                   icon="credit-card"
                   iconBg={colors.warningBg || '#FEF3C7'}
@@ -496,6 +536,23 @@ export default function Reports() {
                 </View>
               )}
             </View>
+
+            {/* Meta Financeira */}
+            <GoalProgressCard 
+              goal={goal}
+              progressPercentage={progressPercentage}
+              monthBalance={report ? (report.income - report.expense) : 0}
+              onCreatePress={() => setShowGoalModal(true)}
+              onGoalPress={() => setShowGoalModal(true)}
+            />
+
+            {/* Modal de Criar/Editar Meta */}
+            <CreateGoalModal
+              visible={showGoalModal}
+              onClose={() => setShowGoalModal(false)}
+              onSave={handleSaveGoal}
+              existingGoal={goal}
+            />
 
             {/* Top categorias de gastos */}
             <ExpensesByCategoryCard 

@@ -159,25 +159,6 @@ export interface CreditCardBill extends BaseDocument {
 }
 
 // ==========================================
-// METAS / OBJETIVOS
-// ==========================================
-
-export type GoalStatus = 'active' | 'completed' | 'cancelled';
-
-export interface Goal extends BaseDocument {
-  name: string;
-  targetAmount: number;
-  currentAmount: number;
-  deadline?: Timestamp;
-  icon?: string;
-  color?: string;
-  status: GoalStatus;
-}
-
-export type CreateGoalInput = Omit<Goal, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'currentAmount'>;
-export type UpdateGoalInput = Partial<CreateGoalInput>;
-
-// ==========================================
 // PREFERÊNCIAS DO USUÁRIO
 // ==========================================
 
@@ -194,6 +175,48 @@ export interface UserPreferences {
     weeklyReport: boolean;
   };
 }
+
+// ==========================================
+// METAS FINANCEIRAS
+// ==========================================
+
+export type GoalTimeframe = 'short' | 'medium' | 'long';
+
+export interface Goal extends BaseDocument {
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  timeframe: GoalTimeframe;
+  isActive: boolean;
+  completedAt?: Timestamp;
+  icon?: string;
+  color?: string;
+}
+
+export type CreateGoalInput = Omit<Goal, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'currentAmount'> & {
+  currentAmount?: number;
+};
+export type UpdateGoalInput = Partial<Omit<CreateGoalInput, 'isActive'>>;
+
+// Labels para prazos
+export const GOAL_TIMEFRAME_LABELS: Record<GoalTimeframe, string> = {
+  short: 'Curto prazo',
+  medium: 'Médio prazo',
+  long: 'Longo prazo',
+};
+
+// Descrições dos prazos
+export const GOAL_TIMEFRAME_DESCRIPTIONS: Record<GoalTimeframe, string> = {
+  short: 'até 1 ano',
+  medium: '1 a 5 anos',
+  long: 'acima de 5 anos',
+};
+
+// Ícones sugeridos para metas
+export const GOAL_ICONS = [
+  'piggy-bank', 'home', 'car', 'airplane', 'briefcase', 
+  'school', 'heart', 'trophy', 'star', 'wallet',
+];
 
 // ==========================================
 // HELPERS / CONSTANTES

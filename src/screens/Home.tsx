@@ -5,15 +5,21 @@ import { useAppTheme } from "../contexts/themeContext";
 import { useTransactions, useExpensesByCategory } from "../hooks/useFirebaseTransactions";
 import { useAccounts } from "../hooks/useAccounts";
 import { useCreditCards } from "../hooks/useCreditCards";
+import { useGoal } from "../hooks/useGoal";
 import { useTransactionRefresh } from "../contexts/transactionRefreshContext";
-import { useEffect, useMemo, useCallback } from "react";
+import { useEffect, useMemo, useCallback, useState } from "react";
 import AppHeader from "../components/AppHeader";
 import MainLayout from "../components/MainLayout";
 import HomeOverview from "../components/home/HomeOverview";
 import BalanceCard from "../components/home/BalanceCard";
 import ExpensesByCategoryCard from "../components/ExpensesByCategoryCard";
 import CreditCardsCard from "../components/home/CreditCardsCard";
+import GoalCard from "../components/home/GoalCard";
+import CreateGoalModal from "../components/CreateGoalModal";
+import AddToGoalModal from "../components/AddToGoalModal";
 import { ACCOUNT_TYPE_LABELS } from "../types/firebase";
+import * as goalService from "../services/goalService";
+import * as accountService from "../services/accountService";
 
 export default function Home() {
   const { user } = useAuth();
@@ -48,6 +54,63 @@ export default function Home() {
 
   // Hook de gastos por categoria
   const { expenses: categoryExpenses } = useExpensesByCategory(currentMonth, currentYear);
+
+  // Hook de meta financeira
+  const { goal, progressPercentage, refresh: refreshGoal } = useGoal();
+
+  // Estado do modal de criação de meta
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [showAddToGoalModal, setShowAddToGoalModal] = useState(false);
+
+  // Criar ou atualizar meta
+  const handleSaveGoal = async (data: {
+    name: string;
+    targetAmount: number;
+    timeframe: 'short' | 'medium' | 'long';
+    icon: string;
+  }) => {
+    if (!user) return;
+
+    if (goal) {
+      // Atualizar meta existente
+      await goalService.updateGoal(goal.id, {
+        name: data.name,
+        targetAmount: data.targetAmount,
+        timeframe: data.timeframe,
+        icon: data.icon,
+      });
+    } else {
+      // Criar nova meta
+      await goalService.createGoal(user.uid, {
+        name: data.name,
+        targetAmount: data.targetAmount,
+        timeframe: data.timeframe,
+        icon: data.icon,
+        isActive: true,
+      });
+    }
+    refreshGoal();
+  };
+
+  // Adicionar valor à meta (debita da conta selecionada)
+  const handleAddToGoal = async (amount: number, accountId: string) => {
+    if (!goal) return;
+    
+    // Debitar da conta
+    const account = accounts.find(acc => acc.id === accountId);
+    if (account) {
+      await accountService.updateAccount(accountId, {
+        balance: account.balance - amount,
+      });
+    }
+    
+    // Adicionar à meta
+    await goalService.addToGoalProgress(goal.id, amount);
+    
+    // Atualizar dados
+    refreshGoal();
+    refreshAccounts();
+  };
 
   // Calcular saldo total das contas e formatar para o componente
   const { totalAccountsBalance, formattedAccounts } = useMemo(() => {
@@ -139,6 +202,37 @@ export default function Home() {
             />
           </View>
         </View>
+
+        <View style={{ height: 12 }} />
+        
+        {/* Meta Financeira */}
+        <GoalCard 
+          goal={goal}
+          progressPercentage={progressPercentage}
+          onCreatePress={() => setShowGoalModal(true)}
+          onGoalPress={() => setShowGoalModal(true)}
+          onAddPress={() => setShowAddToGoalModal(true)}
+        />
+
+        {/* Modal de Criar/Editar Meta */}
+        <CreateGoalModal
+          visible={showGoalModal}
+          onClose={() => setShowGoalModal(false)}
+          onSave={handleSaveGoal}
+          existingGoal={goal}
+        />
+
+        {/* Modal de Adicionar à Meta */}
+        {goal && (
+          <AddToGoalModal
+            visible={showAddToGoalModal}
+            onClose={() => setShowAddToGoalModal(false)}
+            onSave={handleAddToGoal}
+            goal={goal}
+            progressPercentage={progressPercentage}
+            accounts={accounts}
+          />
+        )}
 
         <View style={{ height: 12 }} />
         <View style={{ flexDirection: isNarrow ? 'column' : 'row' }}>
