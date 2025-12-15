@@ -131,8 +131,7 @@ const styles = StyleSheet.create({
   card: {
     padding: spacing.lg,
     borderRadius: borderRadius.lg,
-    marginHorizontal: spacing.md,
-    marginTop: spacing.sm,
+    marginBottom: spacing.md,
   },
   header: {
     flexDirection: 'row',
