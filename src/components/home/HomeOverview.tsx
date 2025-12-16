@@ -47,7 +47,25 @@ export default function HomeOverview({
     return { text: 'Boa noite', emoji: '🌙' };
   };
 
+  // Formatar data amigável
+  const getFriendlyDate = () => {
+    const now = new Date();
+    const weekday = new Intl.DateTimeFormat('pt-BR', { weekday: 'long' }).format(now);
+    const day = now.getDate();
+    const month = new Intl.DateTimeFormat('pt-BR', { month: 'short' }).format(now);
+    
+    return `Hoje é ${weekday}, ${day} de ${month}`;
+  };
+
+  // Obter mês abreviado atual
+  const getCurrentMonthShort = () => {
+    const now = new Date();
+    return new Intl.DateTimeFormat('pt-BR', { month: 'short' }).format(now);
+  };
+
   const greeting = getGreeting();
+  const friendlyDate = getFriendlyDate();
+  const currentMonth = getCurrentMonthShort();
 
   // Action button component
   const ActionButton = ({ 
@@ -80,19 +98,26 @@ export default function HomeOverview({
       <View style={[styles.wrapper, isDesktop && styles.wrapperDesktop]}>
         {/* Card Principal - Saudação e Stats */}
         <View style={[styles.mainCard, { backgroundColor: colors.card }, getShadow(colors)]}>
-          {/* Saudação */}
+          {/* Saudação com data */}
           <View style={styles.greetingContainer}>
-            <Text style={[styles.greeting, { color: colors.text }]}>
-              {greeting.text}, {username}
-            </Text>
-            <Text style={styles.greetingEmoji}>{greeting.emoji}</Text>
+            <View style={styles.greetingTextContainer}>
+              <View style={styles.greetingRow}>
+                <Text style={[styles.greeting, { color: colors.text }]}>
+                  {greeting.text}, {username}
+                </Text>
+                <Text style={styles.greetingEmoji}>{greeting.emoji}</Text>
+              </View>
+              <Text style={[styles.dateText, { color: colors.textMuted }]}>
+                {friendlyDate}
+              </Text>
+            </View>
           </View>
 
           {/* Stats lado a lado */}
           <View style={styles.statsRow}>
             <View style={[styles.statBox, styles.statBoxLeft]}>
               <Text style={[styles.statLabel, { color: colors.textMuted }]}>
-                Receitas no mês atual
+                Receitas em {currentMonth}
               </Text>
               <Text style={[styles.statValue, { color: colors.income }]}>
                 {formatCurrencyBRL(revenue)}
@@ -103,7 +128,7 @@ export default function HomeOverview({
 
             <View style={[styles.statBox, styles.statBoxRight]}>
               <Text style={[styles.statLabel, { color: colors.textMuted }]}>
-                Despesas no mês atual
+                Despesas em {currentMonth}
               </Text>
               <Text style={[styles.statValue, { color: colors.expense }]}>
                 {formatCurrencyBRL(expenses)}
@@ -184,10 +209,16 @@ const styles = StyleSheet.create({
 
   // Saudação
   greetingContainer: {
+    marginBottom: spacing.lg,
+  },
+  greetingTextContainer: {
+    flex: 1,
+  },
+  greetingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xs,
   },
   greeting: {
     fontSize: 22,
@@ -195,6 +226,9 @@ const styles = StyleSheet.create({
   },
   greetingEmoji: {
     fontSize: 28,
+  },
+  dateText: {
+    fontSize: 13,
   },
 
   // Stats em linha
