@@ -37,6 +37,10 @@ export default function CreditCardBillDetails() {
   
   const { activeAccounts } = useAccounts();
   
+  // Estado para mês e ano navegáveis
+  const [selectedMonth, setSelectedMonth] = useState(params.month);
+  const [selectedYear, setSelectedYear] = useState(params.year);
+  
   const [bill, setBill] = useState<CreditCardBillWithTransactions | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -52,12 +56,13 @@ export default function CreditCardBillDetails() {
   const loadBillDetails = async () => {
     if (!user) return;
     
+    setLoading(true);
     try {
       const billData = await getBillDetails(
         user.uid,
         params.creditCardId,
-        params.month,
-        params.year
+        selectedMonth,
+        selectedYear
       );
       setBill(billData);
     } catch (error) {
@@ -71,12 +76,43 @@ export default function CreditCardBillDetails() {
 
   useEffect(() => {
     loadBillDetails();
-  }, [user, params]);
+  }, [user, selectedMonth, selectedYear]);
 
   const onRefresh = () => {
     setRefreshing(true);
     loadBillDetails();
   };
+
+  // Navegação entre meses
+  const goToPreviousMonth = () => {
+    if (selectedMonth === 1) {
+      setSelectedMonth(12);
+      setSelectedYear(selectedYear - 1);
+    } else {
+      setSelectedMonth(selectedMonth - 1);
+    }
+  };
+
+  const goToNextMonth = () => {
+    if (selectedMonth === 12) {
+      setSelectedMonth(1);
+      setSelectedYear(selectedYear + 1);
+    } else {
+      setSelectedMonth(selectedMonth + 1);
+    }
+  };
+
+  const goToToday = () => {
+    const today = new Date();
+    setSelectedMonth(today.getMonth() + 1);
+    setSelectedYear(today.getFullYear());
+  };
+
+  // Verificar se é o mês atual
+  const today = new Date();
+  const isCurrentMonth = selectedMonth === today.getMonth() + 1 && selectedYear === today.getFullYear();
+  const isFutureMonth = selectedYear > today.getFullYear() || 
+    (selectedYear === today.getFullYear() && selectedMonth > today.getMonth() + 1);
 
   // Agrupar transações por data
   const groupedTransactions = useMemo(() => {
@@ -175,7 +211,14 @@ export default function CreditCardBillDetails() {
   };
 
   // Título da fatura
-  const billTitle = `Fatura ${getMonthName(params.month)} ${params.year}`;
+  const billTitle = `Fatura ${getMonthName(selectedMonth)} ${selectedYear}`;
+
+  // Nomes dos meses abreviados
+  const MONTHS = [
+    'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+    'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
+  ];
+  const monthYearLabel = `${MONTHS[selectedMonth - 1]} ${selectedYear}`;
 
   return (
     <MainLayout>
@@ -194,6 +237,52 @@ export default function CreditCardBillDetails() {
       >
         <View style={styles.centeredContainer}>
         <View style={styles.content}>
+        {/* Navegação de Mês */}
+        <View style={[styles.monthNavigation, { backgroundColor: colors.card }, getShadow(colors)]}>
+          <Pressable 
+            onPress={goToPreviousMonth}
+            style={({ pressed }) => [styles.navButton, pressed && { opacity: 0.7 }]}
+          >
+            <MaterialCommunityIcons name="chevron-left" size={28} color={colors.primary} />
+          </Pressable>
+          
+          <Pressable 
+            onPress={goToToday}
+            style={({ pressed }) => [styles.monthLabelContainer, pressed && { opacity: 0.8 }]}
+          >
+            <Text style={[styles.monthLabel, { color: colors.text }]}>
+              {monthYearLabel}
+            </Text>
+            {isFutureMonth && (
+              <View style={[styles.futureBadge, { backgroundColor: colors.primaryBg }]}>
+                <Text style={[styles.futureBadgeText, { color: colors.primary }]}>Futuro</Text>
+              </View>
+            )}
+          </Pressable>
+          
+          <Pressable 
+            onPress={goToNextMonth}
+            style={({ pressed }) => [styles.navButton, pressed && { opacity: 0.7 }]}
+          >
+            <MaterialCommunityIcons name="chevron-right" size={28} color={colors.primary} />
+          </Pressable>
+        </View>
+
+        {/* Botão Ir para Hoje */}
+        {!isCurrentMonth && (
+          <Pressable 
+            onPress={goToToday}
+            style={({ pressed }) => [
+              styles.todayButton, 
+              { backgroundColor: colors.primaryBg },
+              pressed && { opacity: 0.8 }
+            ]}
+          >
+            <MaterialCommunityIcons name="calendar-today" size={16} color={colors.primary} />
+            <Text style={[styles.todayButtonText, { color: colors.primary }]}>Ir para hoje</Text>
+          </Pressable>
+        )}
+
         {/* Card do resumo da fatura */}
         <View style={[styles.billCard, { backgroundColor: colors.card, ...getShadow(colors) }]}>
           <View style={styles.billHeader}>
@@ -438,6 +527,50 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.lg,
+  },
+  monthNavigation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.md,
+  },
+  navButton: {
+    padding: spacing.xs,
+  },
+  monthLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  monthLabel: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  futureBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+  },
+  futureBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  todayButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    alignSelf: 'flex-end',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.md,
+  },
+  todayButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   billCard: {
     borderRadius: borderRadius.lg,
