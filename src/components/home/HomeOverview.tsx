@@ -23,6 +23,7 @@ export default function HomeOverview({
   const { colors } = useAppTheme();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
+  const isNarrowStats = width < 500; // Mobile: stats em coluna
 
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<'despesa' | 'receita' | 'transfer'>('despesa');
@@ -113,9 +114,9 @@ export default function HomeOverview({
             </View>
           </View>
 
-          {/* Stats lado a lado */}
-          <View style={styles.statsRow}>
-            <View style={[styles.statBox, styles.statBoxLeft]}>
+          {/* Stats - responsivo */}
+          <View style={[styles.statsRow, isNarrowStats && styles.statsColumn]}>
+            <View style={[styles.statBox, styles.statBoxLeft, isNarrowStats && styles.statBoxFull]}>
               <Text style={[styles.statLabel, { color: colors.textMuted }]}>
                 Receitas em {currentMonth}
               </Text>
@@ -124,9 +125,9 @@ export default function HomeOverview({
               </Text>
             </View>
 
-            <View style={styles.statDivider} />
+            {!isNarrowStats && <View style={styles.statDivider} />}
 
-            <View style={[styles.statBox, styles.statBoxRight]}>
+            <View style={[styles.statBox, styles.statBoxRight, isNarrowStats && styles.statBoxFull]}>
               <Text style={[styles.statLabel, { color: colors.textMuted }]}>
                 Despesas em {currentMonth}
               </Text>
@@ -136,9 +137,11 @@ export default function HomeOverview({
             </View>
 
             {/* Ícone de gráfico */}
-            <View style={styles.chartIcon}>
-              <MaterialCommunityIcons name="chart-line-variant" size={32} color={colors.textMuted} />
-            </View>
+            {!isNarrowStats && (
+              <View style={styles.chartIcon}>
+                <MaterialCommunityIcons name="chart-line-variant" size={32} color={colors.textMuted} />
+              </View>
+            )}
           </View>
         </View>
 
@@ -237,6 +240,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.lg,
   },
+  statsColumn: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: spacing.md,
+  },
   statBox: {
     flex: 1,
   },
@@ -245,6 +253,10 @@ const styles = StyleSheet.create({
   },
   statBoxRight: {
     alignItems: 'flex-start',
+  },
+  statBoxFull: {
+    flex: undefined,
+    width: '100%',
   },
   statLabel: {
     fontSize: 12,
