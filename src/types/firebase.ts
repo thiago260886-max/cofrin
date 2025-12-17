@@ -120,6 +120,7 @@ export interface Transaction extends BaseDocument {
   
   // Recorrência
   recurrence: RecurrenceType;
+  recurrenceType?: 'installment' | 'fixed'; // Tipo de recorrência: parcelada ou fixa
   recurrenceEndDate?: Timestamp;
   parentTransactionId?: string; // Se é uma transação gerada por recorrência
   seriesId?: string; // Identificador único da série de transações recorrentes
