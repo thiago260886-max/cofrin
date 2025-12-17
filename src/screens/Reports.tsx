@@ -419,43 +419,39 @@ export default function Reports() {
               Resumo financeiro
             </Text>
             
-            <View style={[styles.statsGrid, { flexDirection: isNarrow ? 'column' : 'row' }]}>
-              <View style={[styles.statsRow, { flex: isNarrow ? undefined : 1 }]}>
-                <StatCard
-                  title="Receitas"
-                  value={formatCurrencyBRL(report?.income || 0)}
-                  icon="arrow-up-circle"
-                  iconBg={colors.successBg}
-                  iconColor={colors.income}
-                  colors={colors}
-                />
-                <StatCard
-                  title="Despesas"
-                  value={formatCurrencyBRL(report?.expense || 0)}
-                  icon="arrow-down-circle"
-                  iconBg={colors.dangerBg}
-                  iconColor={colors.expense}
-                  colors={colors}
-                />
-              </View>
-              <View style={[styles.statsRow, { flex: isNarrow ? undefined : 1 }]}>
-                <StatCard
-                  title="Gastos débito"
-                  value={formatCurrencyBRL(report?.debitExpenses || 0)}
-                  icon="wallet"
-                  iconBg={colors.primaryBg}
-                  iconColor={colors.primary}
-                  colors={colors}
-                />
-                <StatCard
-                  title="Gastos crédito"
-                  value={formatCurrencyBRL(report?.creditExpenses || 0)}
-                  icon="credit-card"
-                  iconBg={colors.warningBg || '#FEF3C7'}
-                  iconColor={colors.warning || '#F59E0B'}
-                  colors={colors}
-                />
-              </View>
+            <View style={[styles.statsGrid, isNarrow && styles.statsGridMobile]}>
+              <StatCard
+                title="Receitas"
+                value={formatCurrencyBRL(report?.income || 0)}
+                icon="arrow-up-circle"
+                iconBg={colors.successBg}
+                iconColor={colors.income}
+                colors={colors}
+              />
+              <StatCard
+                title="Despesas"
+                value={formatCurrencyBRL(report?.expense || 0)}
+                icon="arrow-down-circle"
+                iconBg={colors.dangerBg}
+                iconColor={colors.expense}
+                colors={colors}
+              />
+              <StatCard
+                title="Gastos débito"
+                value={formatCurrencyBRL(report?.debitExpenses || 0)}
+                icon="wallet"
+                iconBg={colors.primaryBg}
+                iconColor={colors.primary}
+                colors={colors}
+              />
+              <StatCard
+                title="Gastos crédito"
+                value={formatCurrencyBRL(report?.creditExpenses || 0)}
+                icon="credit-card"
+                iconBg={colors.warningBg || '#FEF3C7'}
+                iconColor={colors.warning || '#F59E0B'}
+                colors={colors}
+              />
             </View>
 
             {/* Compromisso futuro */}
@@ -753,8 +749,13 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm,
     marginBottom: spacing.md,
+  },
+  statsGridMobile: {
+    flexDirection: 'column',
   },
   statsRow: {
     flexDirection: 'row',
