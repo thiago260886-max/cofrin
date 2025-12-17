@@ -29,7 +29,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // Types
 type LocalTransactionType = 'despesa' | 'receita' | 'transfer';
-type PickerType = 'none' | 'category' | 'account' | 'toAccount' | 'creditCard' | 'recurrence' | 'repetitions' | 'date';
+type PickerType = 'none' | 'category' | 'account' | 'toAccount' | 'creditCard' | 'recurrence' | 'recurrenceType' | 'repetitions' | 'date';
 
 export interface EditableTransaction {
   id: string;
@@ -46,6 +46,7 @@ export interface EditableTransaction {
   creditCardId?: string;
   creditCardName?: string;
   recurrence?: RecurrenceType;
+  recurrenceType?: 'installment' | 'fixed';
   seriesId?: string; // ID da série para transações recorrentes
 }
 
@@ -66,6 +67,12 @@ const RECURRENCE_OPTIONS: { label: string; value: RecurrenceType }[] = [
   { label: 'Quinzenal', value: 'biweekly' },
   { label: 'Mensal', value: 'monthly' },
   { label: 'Anual', value: 'yearly' },
+];
+
+// Opções de tipo de recorrência (parcelada ou fixa)
+const RECURRENCE_TYPE_OPTIONS = [
+  { label: 'Parcelada', value: 'installment', description: 'Valor total dividido pelas repetições' },
+  { label: 'Fixa', value: 'fixed', description: 'Mesmo valor em cada repetição' },
 ];
 
 // Opções de número de repetições (1-72)
@@ -151,6 +158,7 @@ export default function AddTransactionModal({
   
   const [date, setDate] = useState(new Date());
   const [recurrence, setRecurrence] = useState<RecurrenceType>('none');
+  const [recurrenceType, setRecurrenceType] = useState<'installment' | 'fixed'>('installment'); // Parcelada ou Fixa
   const [repetitions, setRepetitions] = useState(1); // Número de repetições (1-72)
   const [saving, setSaving] = useState(false);
 
@@ -167,10 +175,11 @@ export default function AddTransactionModal({
   const installmentValue = React.useMemo(() => {
     if (recurrence !== 'none' && repetitions > 1) {
       const parsed = parseCurrency(amount);
-      return parsed / repetitions;
+      // Se for parcelada, divide o valor. Se for fixa, mantém o valor integral
+      return recurrenceType === 'installment' ? parsed / repetitions : parsed;
     }
     return 0;
-  }, [amount, repetitions, recurrence]);
+  }, [amount, repetitions, recurrence, recurrenceType]);
   
   // Obter conta de origem e verificar saldo
   const sourceAccount = React.useMemo(() => {
@@ -250,6 +259,7 @@ export default function AddTransactionModal({
         setDescription(editTransaction.description || '');
         setDate(editTransaction.date);
         setRecurrence(editTransaction.recurrence || 'none');
+        setRecurrenceType(editTransaction.recurrenceType || 'installment');
         setRepetitions(1); // Em edição, não alteramos repetições
         
         // Category
@@ -409,12 +419,20 @@ export default function AddTransactionModal({
         txDate.setHours(0, 0, 0, 0);
         const transactionStatus = txDate > today ? 'pending' : 'completed';
 
+        // Calcular valor da transação baseado no tipo de recorrência
+        const transactionAmount = amountPerTransaction ?? (
+          recurrence !== 'none' && repetitions > 1 && recurrenceType === 'installment'
+            ? parsed / repetitions
+            : parsed
+        );
+
         const data: CreateTransactionInput = {
           type: firebaseType,
-          amount: amountPerTransaction ?? parsed,
+          amount: transactionAmount,
           description: description.trim() || categoryName,
           date: Timestamp.fromDate(transactionDate),
           recurrence,
+          recurrenceType: recurrence !== 'none' && repetitions > 1 ? recurrenceType : undefined,
           status: transactionStatus,
         };
 
@@ -483,7 +501,10 @@ export default function AddTransactionModal({
       } else {
         // Create new transaction(s)
         const totalToCreate = recurrence === 'none' ? 1 : repetitions;
-        const amountPerInstallment = recurrence === 'none' ? parsed : parsed / totalToCreate;
+        // Calcular valor considerando o tipo de recorrência
+        const amountPerInstallment = recurrence === 'none' 
+          ? parsed 
+          : (recurrenceType === 'installment' ? parsed / totalToCreate : parsed);
         let createdCount = 0;
 
         for (let i = 0; i < totalToCreate; i++) {
@@ -499,7 +520,10 @@ export default function AddTransactionModal({
         if (success) {
           if (totalToCreate > 1) {
             const valuePerInstallment = formatCurrency(Math.round(amountPerInstallment * 100).toString());
-            showAlert('Sucesso', `${createdCount} lançamentos criados!\n${totalToCreate}x de ${valuePerInstallment}`, [{ text: 'OK', style: 'default' }]);
+            const totalMessage = recurrenceType === 'fixed' 
+              ? `Total geral: ${formatCurrency(Math.round(amountPerInstallment * totalToCreate * 100).toString())}`
+              : '';
+            showAlert('Sucesso', `${createdCount} lançamentos criados!\n${totalToCreate}x de ${valuePerInstallment}${totalMessage ? '\n' + totalMessage : ''}`, [{ text: 'OK', style: 'default' }]);
           } else {
             showAlert('Sucesso', 'Lançamento salvo!', [{ text: 'OK', style: 'default' }]);
           }
@@ -965,6 +989,54 @@ export default function AddTransactionModal({
       );
     }
 
+    // Render picker for recurrence type (installment or fixed)
+    if (activePicker === 'recurrenceType') {
+      return (
+        <View style={[styles.pickerContainer, { backgroundColor: colors.card }]}>
+          <View style={[styles.pickerHeader, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.pickerTitle, { color: colors.text }]}>Tipo de Recorrência</Text>
+            <Pressable onPress={() => setActivePicker('none')} hitSlop={12}>
+              <MaterialCommunityIcons name="close" size={24} color={colors.textMuted} />
+            </Pressable>
+          </View>
+          <ScrollView style={styles.pickerScroll} showsVerticalScrollIndicator={false}>
+            {RECURRENCE_TYPE_OPTIONS.map((option) => (
+              <Pressable
+                key={option.value}
+                onPress={() => {
+                  setRecurrenceType(option.value as 'installment' | 'fixed');
+                  setActivePicker('none');
+                }}
+                style={({ pressed }) => [
+                  styles.pickerOption,
+                  { backgroundColor: pressed ? colors.grayLight : 'transparent' },
+                  recurrenceType === option.value && { backgroundColor: colors.primaryBg },
+                ]}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[
+                      styles.pickerOptionText,
+                      { color: colors.text },
+                      recurrenceType === option.value && { color: colors.primary, fontWeight: '600' },
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                  <Text style={[styles.pickerOptionDescription, { color: colors.textMuted }]}>
+                    {option.description}
+                  </Text>
+                </View>
+                {recurrenceType === option.value && (
+                  <MaterialCommunityIcons name="check" size={20} color={colors.primary} />
+                )}
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      );
+    }
+
     // Render repetitions picker
     if (activePicker === 'repetitions') {
       return (
@@ -1194,6 +1266,18 @@ export default function AddTransactionModal({
                       icon="repeat"
                       onPress={() => setActivePicker('recurrence')}
                     />
+                    {/* Tipo de recorrência - só aparece se recorrência != none */}
+                    {recurrence !== 'none' && (
+                      <>
+                        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                        <SelectField
+                          label="Tipo"
+                          value={RECURRENCE_TYPE_OPTIONS.find((r) => r.value === recurrenceType)?.label || 'Parcelada'}
+                          icon="cash-multiple"
+                          onPress={() => setActivePicker('recurrenceType')}
+                        />
+                      </>
+                    )}
                     {/* Número de repetições - só aparece se recorrência != none */}
                     {recurrence !== 'none' && (
                       <>
@@ -1209,7 +1293,10 @@ export default function AddTransactionModal({
                           <View style={[styles.installmentInfo, { backgroundColor: colors.primaryBg }]}>
                             <MaterialCommunityIcons name="information" size={16} color={colors.primary} />
                             <Text style={[styles.installmentText, { color: colors.primary }]}>
-                              {repetitions}x de {formatCurrency(Math.round(installmentValue * 100).toString())}
+                              {recurrenceType === 'installment' 
+                                ? `${repetitions}x de ${formatCurrency(Math.round(installmentValue * 100).toString())}`
+                                : `${repetitions}x de ${formatCurrency(Math.round(installmentValue * 100).toString())} cada (Total: ${formatCurrency(Math.round(installmentValue * repetitions * 100).toString())})`
+                              }
                             </Text>
                           </View>
                         )}
@@ -1556,6 +1643,10 @@ const styles = StyleSheet.create({
   },
   pickerOptionText: {
     fontSize: 15,
+  },
+  pickerOptionDescription: {
+    fontSize: 12,
+    marginTop: 2,
   },
   pickerDivider: {
     height: 1,
