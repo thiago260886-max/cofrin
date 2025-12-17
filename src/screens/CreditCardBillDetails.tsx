@@ -8,6 +8,7 @@ import { useAppTheme } from '../contexts/themeContext';
 import { useAuth } from '../contexts/authContext';
 import { useTransactionRefresh } from '../contexts/transactionRefreshContext';
 import { useAccounts } from '../hooks/useAccounts';
+import AddTransactionModal, { EditableTransaction } from '../components/transactions/AddTransactionModal';
 import AppHeader from '../components/AppHeader';
 import MainLayout from '../components/MainLayout';
 import { spacing, borderRadius, getShadow } from '../theme';
@@ -19,7 +20,6 @@ import {
   getMonthName,
   CreditCardBillWithTransactions
 } from '../services/creditCardBillService';
-import { deleteTransaction } from '../services/transactionService';
 import type { Transaction } from '../types/firebase';
 
 interface RouteParams {
@@ -54,6 +54,10 @@ export default function CreditCardBillDetails() {
   const [payModalVisible, setPayModalVisible] = useState(false);
   const [selectedAccountId, setSelectedAccountId] = useState('');
   const [selectedAccountName, setSelectedAccountName] = useState('');
+  
+  // Modal de edição de transação
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<EditableTransaction | null>(null);
 
   // Carregar detalhes da fatura
   const loadBillDetails = async () => {
@@ -213,30 +217,40 @@ export default function CreditCardBillDetails() {
     );
   };
 
-  // Deletar transação
-  const handleDeleteTransaction = async (transaction: Transaction) => {
-    showAlert(
-      'Excluir lançamento',
-      `Tem certeza que deseja excluir "${transaction.description}"?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          onPress: async () => {
-            try {
-              await deleteTransaction(transaction);
-              triggerRefresh(); // Atualizar todos os componentes que usam transações
-              showAlert('Sucesso', 'Lançamento excluído com sucesso', [{ text: 'OK' }]);
-              loadBillDetails(); // Recarregar dados
-            } catch (error) {
-              console.error('Erro ao excluir transação:', error);
-              showAlert('Erro', 'Não foi possível excluir o lançamento', [{ text: 'OK' }]);
-            }
-          },
-        },
-      ]
-    );
+  // Editar transação
+  const handleEditTransaction = (transaction: Transaction) => {
+    // Bloquear edição se a fatura estiver paga
+    if (bill?.isPaid) {
+      showAlert(
+        'Ação não permitida',
+        'Não é possível editar transações de uma fatura já paga. Desfaça o pagamento primeiro.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    const editData: EditableTransaction = {
+      id: transaction.id,
+      type: transaction.type,
+      amount: transaction.amount,
+      description: transaction.description,
+      date: transaction.date.toDate(),
+      categoryId: transaction.categoryId,
+      categoryName: transaction.categoryName,
+      accountId: transaction.accountId,
+      accountName: transaction.accountName,
+      toAccountId: transaction.toAccountId,
+      toAccountName: transaction.toAccountName,
+      creditCardId: transaction.creditCardId,
+      creditCardName: transaction.creditCardName,
+      recurrence: transaction.recurrence,
+      seriesId: transaction.seriesId,
+    };
+
+    setEditingTransaction(editData);
+    setEditModalVisible(true);
   };
+
 
   // Título da fatura
   const billTitle = `Fatura ${getMonthName(selectedMonth)} ${selectedYear}`;
@@ -439,15 +453,17 @@ export default function CreditCardBillDetails() {
                 ]}>
                   {t.type === 'expense' ? '-' : '+'}{formatCurrencyBRL(t.amount)}
                 </Text>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.deleteButton,
-                    pressed && { opacity: 0.6 }
-                  ]}
-                  onPress={() => handleDeleteTransaction(t)}
-                >
-                  <MaterialCommunityIcons name="delete-outline" size={20} color={colors.expense} />
-                </Pressable>
+                {!bill?.isPaid && (
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.actionButton,
+                      pressed && { opacity: 0.6 }
+                    ]}
+                    onPress={() => handleEditTransaction(t)}
+                  >
+                    <MaterialCommunityIcons name="pencil" size={20} color={colors.textMuted} />
+                  </Pressable>
+                )}
               </View>
             ))}
           </View>
@@ -545,6 +561,28 @@ export default function CreditCardBillDetails() {
         message={alertState.message}
         buttons={alertState.buttons}
         onClose={hideAlert}
+      />
+      
+      {/* Modal de edição de transação */}
+      <AddTransactionModal
+        visible={editModalVisible}
+        onClose={() => {
+          setEditModalVisible(false);
+          setEditingTransaction(null);
+        }}
+        onSave={() => {
+          setEditModalVisible(false);
+          setEditingTransaction(null);
+          loadBillDetails(); // Recarregar fatura após edição
+          triggerRefresh(); // Atualizar outros componentes
+        }}
+        onDelete={async (id: string) => {
+          setEditModalVisible(false);
+          setEditingTransaction(null);
+          loadBillDetails(); // Recarregar fatura após exclusão
+          triggerRefresh(); // Atualizar outros componentes
+        }}
+        editTransaction={editingTransaction}
       />
     </MainLayout>
   );
@@ -748,7 +786,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginRight: spacing.sm,
   },
-  deleteButton: {
+  actionButton: {
     padding: spacing.xs,
     marginLeft: spacing.xs,
   },
