@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/authContext';
 import { useTransactionRefresh } from '../contexts/transactionRefreshContext';
 import { useAccounts } from '../hooks/useAccounts';
 import AddTransactionModal, { EditableTransaction } from '../components/transactions/AddTransactionModal';
+import TransactionItem from '../components/transactions/TransactionItem';
 import AppHeader from '../components/AppHeader';
 import MainLayout from '../components/MainLayout';
 import { spacing, borderRadius, getShadow } from '../theme';
@@ -427,44 +428,21 @@ export default function CreditCardBillDetails() {
         {Object.entries(groupedTransactions).map(([date, transactions]) => (
           <View key={date} style={styles.dateGroup}>
             <Text style={[styles.dateHeader, { color: colors.textMuted }]}>{date}</Text>
-            {transactions.map((t) => (
-              <View 
-                key={t.id} 
-                style={[styles.transactionItem, { backgroundColor: colors.card }]}
-              >
-                <View style={[styles.transactionIcon, { backgroundColor: (t.type === 'expense' ? '#dc262620' : '#10b98120') }]}>
-                  <MaterialCommunityIcons 
-                    name={t.categoryIcon as any || 'tag-outline'} 
-                    size={20} 
-                    color={t.type === 'expense' ? '#dc2626' : '#10b981'} 
-                  />
-                </View>
-                <View style={styles.transactionContent}>
-                  <Text style={[styles.transactionTitle, { color: colors.text }]} numberOfLines={1}>
-                    {t.description}
-                  </Text>
-                  <Text style={[styles.transactionCategory, { color: colors.textMuted }]}>
-                    {t.categoryName || 'Sem categoria'}
-                  </Text>
-                </View>
-                <Text style={[
-                  styles.transactionAmount, 
-                  { color: t.type === 'expense' ? '#dc2626' : '#10b981' }
-                ]}>
-                  {t.type === 'expense' ? '-' : '+'}{formatCurrencyBRL(t.amount)}
-                </Text>
-                {!bill?.isPaid && (
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.actionButton,
-                      pressed && { opacity: 0.6 }
-                    ]}
-                    onPress={() => handleEditTransaction(t)}
-                  >
-                    <MaterialCommunityIcons name="pencil" size={20} color={colors.textMuted} />
-                  </Pressable>
-                )}
-              </View>
+            {transactions.map((t, index) => (
+              <TransactionItem
+                key={t.id}
+                icon={t.categoryIcon}
+                title={t.description}
+                account={t.accountName || ''}
+                amount={t.type === 'expense' ? -t.amount : t.amount}
+                type={t.type === 'expense' ? 'paid' : 'received'}
+                category={t.categoryName}
+                categoryIcon={t.categoryIcon}
+                status="completed"
+                isLocked={bill?.isPaid}
+                isLastInGroup={index === transactions.length - 1}
+                onEdit={!bill?.isPaid ? () => handleEditTransaction(t) : undefined}
+              />
             ))}
           </View>
         ))}
@@ -750,45 +728,10 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   dateHeader: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     marginBottom: spacing.sm,
     textTransform: 'capitalize',
-  },
-  transactionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
-    marginBottom: spacing.xs,
-  },
-  transactionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  transactionContent: {
-    flex: 1,
-    marginLeft: spacing.md,
-  },
-  transactionTitle: {
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  transactionCategory: {
-    fontSize: 13,
-    marginTop: 2,
-  },
-  transactionAmount: {
-    fontSize: 15,
-    fontWeight: '600',
-    marginRight: spacing.sm,
-  },
-  actionButton: {
-    padding: spacing.xs,
-    marginLeft: spacing.xs,
   },
   emptyState: {
     alignItems: 'center',

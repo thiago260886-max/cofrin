@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, Pressable } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { formatCurrencyBRL } from '../../utils/format';
 import { useAppTheme } from '../../contexts/themeContext';
-import { spacing, borderRadius } from '../../theme';
+import { spacing, borderRadius, getShadow } from '../../theme';
 
 interface Props {
   creditCardName: string;
@@ -13,6 +13,7 @@ interface Props {
   billYear: number;
   totalAmount: number;
   isPaid: boolean;
+  isLastInGroup?: boolean;
   onPress: () => void;
 }
 
@@ -30,6 +31,7 @@ function CreditCardBillItemComponent({
   billYear,
   totalAmount,
   isPaid,
+  isLastInGroup = false,
   onPress,
 }: Props) {
   const { colors } = useAppTheme();
@@ -38,21 +40,23 @@ function CreditCardBillItemComponent({
   const title = `Fatura ${creditCardName}`;
   const subtitle = `${monthName}/${billYear}`;
   
-  // Cor do valor - igual ao TransactionItem
-  const amountColor = isPaid ? colors.textMuted : '#dc2626';
+  // Cor do valor - vermelho para despesa
+  const amountColor = '#dc2626';
   
-  // Status icon e cor - igual ao TransactionItem
-  const statusColor = isPaid ? '#10b981' : colors.textMuted;
-  const statusIcon = isPaid ? 'check-circle' : 'circle-outline';
+  // Badge de status - verde se pago, cinza se pendente
+  const badgeColor = isPaid ? '#10b981' : '#94a3b8';
+  const badgeIcon = isPaid ? 'check' : 'clock-outline';
+  const badgeText = isPaid ? 'Paga' : 'Pendente';
 
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
-        styles.row,
-        { 
-          backgroundColor: pressed ? colors.grayLight : colors.card,
-        }
+        styles.card,
+        { backgroundColor: colors.card },
+        getShadow(colors, 'sm'),
+        pressed && { backgroundColor: colors.grayLight },
+        isLastInGroup && styles.lastInGroup,
       ]}
     >
       {/* Ícone do cartão */}
@@ -62,41 +66,28 @@ function CreditCardBillItemComponent({
           size={24} 
           color={creditCardColor} 
         />
-        {/* Badge de status no canto inferior direito */}
-        <View style={[styles.statusBadge, { backgroundColor: colors.card }]}>
-          <MaterialCommunityIcons 
-            name={statusIcon} 
-            size={14} 
-            color={statusColor} 
-          />
-        </View>
       </View>
       
-      {/* Conteúdo principal */}
+      {/* Conteúdo central - Título e Subtítulo */}
       <View style={styles.content}>
-        <View style={styles.topRow}>
-          <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
-            {title}
-          </Text>
-          <Text style={[styles.amount, { color: amountColor }]}>
-            {formatCurrencyBRL(-totalAmount)}
-          </Text>
-        </View>
-        
-        <View style={styles.bottomRow}>
-          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-            {subtitle}{!isPaid && ' • Pendente'}
-          </Text>
-        </View>
+        <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
+          {title}
+        </Text>
+        <Text style={[styles.subtitle, { color: colors.textMuted }]} numberOfLines={1}>
+          {subtitle}
+        </Text>
       </View>
       
-      {/* Seta para indicar navegação */}
-      <MaterialCommunityIcons 
-        name="chevron-right" 
-        size={20} 
-        color={colors.textMuted}
-        style={styles.chevron}
-      />
+      {/* Coluna direita - Valor e Badge */}
+      <View style={styles.rightColumn}>
+        <Text style={[styles.amount, { color: amountColor }]}>
+          {formatCurrencyBRL(-totalAmount)}
+        </Text>
+        <View style={[styles.badge, { backgroundColor: badgeColor + '15' }]}>
+          <MaterialCommunityIcons name={badgeIcon} size={12} color={badgeColor} />
+          <Text style={[styles.badgeText, { color: badgeColor }]}>{badgeText}</Text>
+        </View>
+      </View>
     </Pressable>
   );
 }
@@ -104,13 +95,16 @@ function CreditCardBillItemComponent({
 export default memo(CreditCardBillItemComponent);
 
 const styles = StyleSheet.create({
-  row: { 
+  card: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.sm + 4,
     borderRadius: borderRadius.md,
     marginBottom: spacing.sm,
+  },
+  lastInGroup: {
+    marginBottom: 0,
   },
   iconContainer: { 
     width: 48, 
@@ -118,51 +112,40 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center', 
     justifyContent: 'center',
-    position: 'relative',
-  },
-  statusBadge: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
   },
   content: {
     flex: 1,
     marginLeft: spacing.md,
-  },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
+    justifyContent: 'center',
   },
   title: {
     fontSize: 15,
     fontWeight: '600',
-    flex: 1,
-    marginRight: spacing.sm,
-  },
-  amount: { 
-    fontWeight: '700', 
-    fontSize: 16,
-  },
-  bottomRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    marginBottom: 2,
   },
   subtitle: {
     fontSize: 12,
   },
-  chevron: {
+  rightColumn: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
     marginLeft: spacing.sm,
+  },
+  amount: { 
+    fontWeight: '700', 
+    fontSize: 16,
+    marginBottom: 4,
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+    gap: 3,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '600',
   },
 });
