@@ -232,6 +232,21 @@ export default function Login({ navigation }: any) {
           </Text>
         </Pressable>
       </View>
+
+      {/* Overlay de Loading Fullscreen */}
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <View style={styles.loadingCard}>
+            <ActivityIndicator size="large" color={LOGIN_COLORS.primary} />
+            <Text style={styles.loadingText}>
+              {emailLoading ? 'Autenticando...' : 'Conectando com Google...'}
+            </Text>
+            <Text style={styles.loadingSubtext}>
+              Aguarde um momento
+            </Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -411,5 +426,47 @@ const styles = StyleSheet.create({
   registerTextBold: {
     color: LOGIN_COLORS.primary,
     fontWeight: '700',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  loadingCard: {
+    backgroundColor: '#fff',
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    alignItems: 'center',
+    minWidth: 200,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  loadingText: {
+    marginTop: spacing.md,
+    fontSize: 16,
+    fontWeight: '600',
+    color: palette.text,
+    textAlign: 'center',
+  },
+  loadingSubtext: {
+    marginTop: spacing.xs,
+    fontSize: 13,
+    color: palette.textMuted,
+    textAlign: 'center',
   },
 });
