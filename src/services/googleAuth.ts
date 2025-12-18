@@ -4,7 +4,7 @@ import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
 import { useEffect } from "react";
 import { auth } from "./firebase";
 import { createDefaultCategories } from "./categoryService";
-import { createDefaultAccount } from "./accountService";
+import { createDefaultAccount, getAllAccounts } from "./accountService";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -33,21 +33,24 @@ export function useGoogleAuth(onLogin?: () => void) {
         .then(async (userCredential) => {
           console.log("Login Google OK!");
           
-          // Verificar se é um novo usuário
-          const isNewUser = userCredential.user.metadata.creationTime === userCredential.user.metadata.lastSignInTime;
+          const userId = userCredential.user.uid;
           
-          if (isNewUser) {
-            console.log("Novo usuário Google, criando dados iniciais...");
-            const userId = userCredential.user.uid;
-            try {
+          // Verificar se usuário já tem contas cadastradas
+          try {
+            const existingAccounts = await getAllAccounts(userId);
+            
+            if (existingAccounts.length === 0) {
+              console.log("Novo usuário Google, criando dados iniciais...");
               await Promise.all([
                 createDefaultCategories(userId),
                 createDefaultAccount(userId),
               ]);
               console.log("Dados iniciais criados com sucesso!");
-            } catch (error) {
-              console.error("Erro ao criar dados iniciais:", error);
+            } else {
+              console.log("Usuário já possui contas cadastradas, não criando dados duplicados.");
             }
+          } catch (error) {
+            console.error("Erro ao verificar/criar dados iniciais:", error);
           }
           
           if (mounted && onLogin) onLogin();

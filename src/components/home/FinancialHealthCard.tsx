@@ -16,7 +16,16 @@ export default function FinancialHealthCard({ income, expense, balance }: Financ
 
   // Calcular status da saúde financeira
   const getHealthStatus = (): { status: HealthStatus; diagnosis: string; tip: string } => {
-    const expenseRatio = income > 0 ? (expense / income) * 100 : 100;
+    // Se não há dados suficientes, retorna status neutro
+    if (income === 0 && expense === 0) {
+      return {
+        status: 'ok',
+        diagnosis: 'Registre suas movimentações para análise',
+        tip: 'Adicione receitas e despesas para acompanhar sua saúde financeira'
+      };
+    }
+
+    const expenseRatio = income > 0 ? (expense / income) * 100 : (expense > 0 ? 100 : 0);
     
     if (balance >= 0 && expenseRatio <= 70) {
       return {
