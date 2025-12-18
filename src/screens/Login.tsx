@@ -16,7 +16,8 @@ const LOGIN_COLORS = {
 export default function Login({ navigation }: any) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showReset, setShowReset] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
@@ -25,9 +26,11 @@ export default function Login({ navigation }: any) {
 
   const { request, promptAsync } = useGoogleAuth();
 
+  const loading = emailLoading || googleLoading;
+
   async function handleLogin() {
     setError(null);
-    setLoading(true);
+    setEmailLoading(true);
     try {
       await login(email.trim(), password);
     } catch (err: any) {
@@ -46,20 +49,20 @@ export default function Login({ navigation }: any) {
 
       setError(message);
     } finally {
-      setLoading(false);
+      setEmailLoading(false);
     }
   }
 
   async function handleGoogleLogin() {
     setError(null);
     if (!request) return;
-    setLoading(true);
+    setGoogleLoading(true);
     try {
       await promptAsync();
     } catch (err: any) {
       setError("Erro ao entrar com Google. Tente novamente.");
     } finally {
-      setLoading(false);
+      setGoogleLoading(false);
     }
   }
 
@@ -142,8 +145,11 @@ export default function Login({ navigation }: any) {
           ]}
           disabled={loading}
         >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
+          {emailLoading ? (
+            <View style={styles.buttonContent}>
+              <ActivityIndicator color="#fff" size="small" />
+              <Text style={[styles.primaryButtonText, { marginLeft: 8 }]}>Entrando...</Text>
+            </View>
           ) : (
             <View style={styles.buttonContent}>
               <MaterialCommunityIcons name="login" size={20} color="#fff" style={{ marginRight: 8 }} />
@@ -157,14 +163,21 @@ export default function Login({ navigation }: any) {
           style={({ pressed }) => [
             styles.googleButton,
             pressed && styles.buttonPressed,
-            !request && styles.buttonDisabled,
+            (!request || loading) && styles.buttonDisabled,
           ]}
           disabled={!request || loading}
         >
-          <View style={styles.buttonContent}>
-            <MaterialCommunityIcons name="google" size={20} color={palette.text} style={{ marginRight: 8 }} />
-            <Text style={styles.googleButtonText}>Continuar com Google</Text>
-          </View>
+          {googleLoading ? (
+            <View style={styles.buttonContent}>
+              <ActivityIndicator color={palette.text} size="small" />
+              <Text style={[styles.googleButtonText, { marginLeft: 8 }]}>Conectando...</Text>
+            </View>
+          ) : (
+            <View style={styles.buttonContent}>
+              <MaterialCommunityIcons name="google" size={20} color={palette.text} style={{ marginRight: 8 }} />
+              <Text style={styles.googleButtonText}>Continuar com Google</Text>
+            </View>
+          )}
         </Pressable>
 
         <Pressable
