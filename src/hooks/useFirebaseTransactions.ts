@@ -148,10 +148,15 @@ export function useTransactions(options: UseTransactionsOptions = {}) {
   // Deletar transação
   const deleteTransaction = async (transactionId: string): Promise<boolean> => {
     try {
-      const transaction = transactions.find(t => t.id === transactionId);
+      // Buscar transação diretamente do banco caso não esteja no estado
+      let transaction = transactions.find(t => t.id === transactionId);
       if (!transaction) {
-        setError('Transação não encontrada');
-        return false;
+        // Buscar do banco de dados
+        transaction = await transactionService.getTransactionById(transactionId);
+        if (!transaction) {
+          setError('Transação não encontrada');
+          return false;
+        }
       }
 
       await transactionService.deleteTransaction(transaction);

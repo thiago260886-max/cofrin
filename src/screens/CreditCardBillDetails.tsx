@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useCustomAlert } from "../hooks/useCustomAlert";
 import CustomAlert from "../components/CustomAlert";
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { useTransactions } from '../hooks/useFirebaseTransactions';
 import { useAppTheme } from '../contexts/themeContext';
 import { useAuth } from '../contexts/authContext';
 import { useTransactionRefresh } from '../contexts/transactionRefreshContext';
@@ -15,11 +16,11 @@ import MainLayout from '../components/MainLayout';
 import { spacing, borderRadius, getShadow } from '../theme';
 import { formatCurrencyBRL } from '../utils/format';
 import {
-  getBillDetails,
-  payBill,
-  unpayBill,
-  getMonthName,
-  CreditCardBillWithTransactions
+    getBillDetails,
+    payBill,
+    unpayBill,
+    getMonthName,
+    CreditCardBillWithTransactions
 } from '../services/creditCardBillService';
 import type { Transaction } from '../types/firebase';
 
@@ -40,6 +41,7 @@ export default function CreditCardBillDetails() {
   const params = route.params as RouteParams;
   
   const { activeAccounts } = useAccounts();
+  const { deleteTransaction, deleteTransactionSeries } = useTransactions();
   
   // Estado para mês e ano navegáveis
   const [selectedMonth, setSelectedMonth] = useState(params.month);
@@ -555,10 +557,26 @@ export default function CreditCardBillDetails() {
           triggerRefresh(); // Atualizar outros componentes
         }}
         onDelete={async (id: string) => {
-          setEditModalVisible(false);
-          setEditingTransaction(null);
-          loadBillDetails(); // Recarregar fatura após exclusão
-          triggerRefresh(); // Atualizar outros componentes
+          const success = await deleteTransaction(id);
+          if (success) {
+            setEditModalVisible(false);
+            setEditingTransaction(null);
+            loadBillDetails(); // Recarregar fatura após exclusão
+            triggerRefresh(); // Atualizar outros componentes
+          } else {
+            showAlert('Erro', 'Não foi possível excluir a transação', [{ text: 'OK' }]);
+          }
+        }}
+        onDeleteSeries={async (seriesId: string) => {
+          const success = await deleteTransactionSeries(seriesId);
+          if (success) {
+            setEditModalVisible(false);
+            setEditingTransaction(null);
+            loadBillDetails(); // Recarregar fatura após exclusão
+            triggerRefresh(); // Atualizar outros componentes
+          } else {
+            showAlert('Erro', 'Não foi possível excluir a série de transações', [{ text: 'OK' }]);
+          }
         }}
         editTransaction={editingTransaction}
       />

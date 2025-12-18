@@ -1,7 +1,8 @@
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppTheme } from '../../contexts/themeContext';
 import { spacing, borderRadius, getShadow } from '../../theme';
+import { formatCurrencyBRL } from '../../utils/format';
 
 type HealthStatus = 'ok' | 'warning' | 'risk';
 
@@ -73,6 +74,22 @@ export default function FinancialHealthCard({ income, expense, balance }: Financ
 
   const config = statusConfig[health.status];
 
+  const showExplanation = () => {
+    const expenseRatio = income > 0 ? (expense / income) * 100 : 0;
+    
+    Alert.alert(
+      'Como calculamos sua saúde financeira',
+      `Analisamos a relação entre suas receitas e despesas do mês:\n\n` +
+      `📊 Receitas: ${formatCurrencyBRL(income)}\n` +
+      `📊 Despesas: ${formatCurrencyBRL(expense)}\n` +
+      `📊 Proporção: ${expenseRatio.toFixed(1)}%\n\n` +
+      `✅ Tudo certo: até 70% da renda comprometida\n` +
+      `⚠️ Atenção: 70% a 95% da renda comprometida\n` +
+      `🚨 Risco: mais de 95% da renda comprometida`,
+      [{ text: 'Entendi' }]
+    );
+  };
+
   return (
     <View style={[styles.card, { backgroundColor: colors.card }, getShadow(colors)]}>
       {/* Header */}
@@ -96,7 +113,7 @@ export default function FinancialHealthCard({ income, expense, balance }: Financ
       </View>
 
       {/* Info Button */}
-      <Pressable style={styles.infoButton}>
+      <Pressable style={styles.infoButton} onPress={showExplanation}>
         <MaterialCommunityIcons name="information-outline" size={16} color={colors.textMuted} />
         <Text style={[styles.infoText, { color: colors.textMuted }]}>
           Como isso é calculado?

@@ -225,16 +225,14 @@ export default function Home() {
 
             <View style={{ height: spacing.lg }} />
 
-            {/* 4. Compromissos de cartão (modo alerta) */}
+            {/* 4. Meus cartões de crédito */}
             <CreditCardsCard 
               cards={activeCards}
               onCardPress={handleCreditCardPress}
               onAddPress={handleAddCreditCard}
             />
 
-            {activeCards.filter(c => (c.currentUsed || 0) > 0).length > 0 && (
-              <View style={{ height: spacing.lg }} />
-            )}
+            <View style={{ height: spacing.lg }} />
 
             {/* 5. Meta financeira */}
             <GoalCard 

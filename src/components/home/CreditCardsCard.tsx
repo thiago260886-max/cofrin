@@ -23,96 +23,150 @@ const getCardColor = (name: string, customColor?: string): string => {
 
 export default function CreditCardsCard({ cards = [], totalBills = 0, onCardPress, onAddPress }: Props) {
   const { colors } = useAppTheme();
-  
-  // Filtrar apenas cartões com uso atual > 0 (compromissos pendentes)
-  const cardsWithCommitments = cards.filter(card => (card.currentUsed || 0) > 0);
-  
-  // Verificar se há alertas de alto uso (> 80%)
-  const hasHighUsage = cardsWithCommitments.some(card => {
-    const usagePercent = card.limit > 0 ? ((card.currentUsed || 0) / card.limit) * 100 : 0;
-    return usagePercent > 80;
-  });
 
-  if (cardsWithCommitments.length === 0) {
-    return null; // Não mostrar o card se não houver compromissos
-  }
-
-  // Componente de item do cartão (simplificado)
-  const CardRow = ({ card }: { card: CreditCard }) => {
+  // Componente de item do cartão (compacto e moderno)
+  const CardItem = ({ card }: { card: CreditCard }) => {
     const cardColor = getCardColor(card.name, card.color);
     const used = card.currentUsed || 0;
     const usagePercent = card.limit > 0 ? (used / card.limit) * 100 : 0;
-    const isHighUsage = usagePercent > 80;
+    const available = card.limit - used;
     
     return (
       <Pressable
         onPress={() => onCardPress?.(card)}
         style={({ pressed }) => [
-          styles.cardRow,
-          { backgroundColor: pressed ? colors.grayLight : 'transparent' }
+          styles.cardItem,
+          { 
+            backgroundColor: colors.bg,
+            borderColor: colors.border,
+            opacity: pressed ? 0.7 : 1,
+          }
         ]}
       >
-        <View style={[styles.cardIcon, { backgroundColor: `${cardColor}15` }]}>
-          <MaterialCommunityIcons
-            name={(card.icon as any) || 'credit-card'}
-            size={20}
-            color={cardColor}
+        {/* Barra de progresso no topo */}
+        <View style={styles.progressBar}>
+          <View 
+            style={[
+              styles.progressFill, 
+              { 
+                width: `${Math.min(usagePercent, 100)}%`,
+                backgroundColor: usagePercent > 80 ? colors.expense : usagePercent > 50 ? colors.warning : colors.primary
+              }
+            ]} 
           />
         </View>
 
-        <View style={styles.cardInfo}>
-          <Text style={[styles.cardName, { color: colors.text }]} numberOfLines={1}>
-            {card.name}
-          </Text>
-          <Text style={[styles.cardDue, { color: colors.textMuted }]}>
-            Vence dia {card.dueDay}
-          </Text>
-        </View>
-
-        <View style={styles.cardBill}>
-          <Text style={[
-            styles.billValue, 
-            { color: isHighUsage ? colors.expense : colors.text }
-          ]}>
-            {formatCurrencyBRL(used)}
-          </Text>
-          {isHighUsage && (
-            <View style={[styles.alertBadge, { backgroundColor: colors.dangerBg }]}>
-              <MaterialCommunityIcons name="alert" size={12} color={colors.danger} />
+        <View style={styles.cardContent}>
+          {/* Ícone e nome */}
+          <View style={styles.cardHeader}>
+            <View style={[styles.cardIconSmall, { backgroundColor: `${cardColor}20` }]}>
+              <MaterialCommunityIcons
+                name={(card.icon as any) || 'credit-card'}
+                size={18}
+                color={cardColor}
+              />
             </View>
-          )}
+            <View style={styles.cardTitleSection}>
+              <Text style={[styles.cardNameCompact, { color: colors.text }]} numberOfLines={1}>
+                {card.name}
+              </Text>
+              <Text style={[styles.cardLimit, { color: colors.textMuted }]}>
+                Limite {formatCurrencyBRL(card.limit)}
+              </Text>
+            </View>
+          </View>
+
+          {/* Informações principais */}
+          <View style={styles.cardStats}>
+            <View style={styles.statItem}>
+              <Text style={[styles.statLabel, { color: colors.textMuted }]}>Usado</Text>
+              <Text style={[styles.statValue, { color: usagePercent > 80 ? colors.expense : colors.text }]}>
+                {formatCurrencyBRL(used)}
+              </Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={[styles.statLabel, { color: colors.textMuted }]}>Disponível</Text>
+              <Text style={[styles.statValue, { color: colors.income }]}>
+                {formatCurrencyBRL(available)}
+              </Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={[styles.statLabel, { color: colors.textMuted }]}>Vencimento</Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>
+                Dia {card.dueDay}
+              </Text>
+            </View>
+          </View>
         </View>
       </Pressable>
     );
   };
 
+  // Botão de adicionar cartão
+  const AddCardButton = () => (
+    <Pressable
+      onPress={onAddPress}
+      style={({ pressed }) => [
+        styles.addCardButton,
+        { 
+          backgroundColor: colors.bg,
+          borderColor: colors.border,
+          opacity: pressed ? 0.7 : 1,
+        }
+      ]}
+    >
+      <View style={[styles.addIconCircle, { backgroundColor: colors.primaryBg }]}>
+        <MaterialCommunityIcons name="plus" size={24} color={colors.primary} />
+      </View>
+      <Text style={[styles.addCardText, { color: colors.text }]}>
+        Adicionar cartão
+      </Text>
+      <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textMuted} />
+    </Pressable>
+  );
+
   return (
     <View style={[styles.card, { backgroundColor: colors.card }, getShadow(colors)]}>
-      {/* Header com alerta */}
+      {/* Header */}
       <View style={styles.header}>
-        <View style={styles.titleSection}>
-          <View style={styles.titleRow}>
-            <MaterialCommunityIcons 
-              name={hasHighUsage ? "alert-circle" : "calendar-clock"} 
-              size={20} 
-              color={hasHighUsage ? colors.expense : colors.primary} 
-            />
-            <Text style={[styles.title, { color: colors.text }]}>
-              Compromissos de cartão
-            </Text>
-          </View>
-          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-            {cardsWithCommitments.length} fatura{cardsWithCommitments.length > 1 ? 's' : ''} pendente{cardsWithCommitments.length > 1 ? 's' : ''} este mês
+        <View style={styles.titleRow}>
+          <MaterialCommunityIcons 
+            name="credit-card-multiple" 
+            size={20} 
+            color={colors.primary} 
+          />
+          <Text style={[styles.title, { color: colors.text }]}>
+            Meus cartões
           </Text>
         </View>
+        {cards.length > 0 && (
+          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+            {cards.length} cartão{cards.length > 1 ? 'es' : ''} cadastrado{cards.length > 1 ? 's' : ''}
+          </Text>
+        )}
       </View>
 
-      {/* Lista de cartões com compromissos */}
+      {/* Lista de cartões */}
       <View style={styles.cardsList}>
-        {cardsWithCommitments.map((card) => (
-          <CardRow key={card.id} card={card} />
+        {cards.map((card) => (
+          <CardItem key={card.id} card={card} />
         ))}
+        
+        {/* Botão de adicionar */}
+        <AddCardButton />
       </View>
+
+      {/* Mensagem vazia */}
+      {cards.length === 0 && (
+        <View style={styles.emptyState}>
+          <MaterialCommunityIcons name="credit-card-plus" size={48} color={colors.textMuted} />
+          <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+            Adicione seu primeiro cartão de crédito
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -124,9 +178,6 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: spacing.md,
-  },
-  titleSection: {
-    flex: 1,
   },
   titleRow: {
     flexDirection: 'row',
@@ -142,48 +193,97 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   cardsList: {
-    gap: spacing.xs,
-  },
-  cardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.xs,
-    borderRadius: borderRadius.md,
     gap: spacing.sm,
   },
-  cardIcon: {
-    width: 40,
-    height: 40,
+  cardItem: {
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+  },
+  progressFill: {
+    height: '100%',
+  },
+  cardContent: {
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  cardIconSmall: {
+    width: 36,
+    height: 36,
     borderRadius: borderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardInfo: {
+  cardTitleSection: {
     flex: 1,
   },
-  cardName: {
+  cardNameCompact: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
     marginBottom: 2,
   },
-  cardDue: {
-    fontSize: 12,
+  cardLimit: {
+    fontSize: 11,
   },
-  cardBill: {
-    alignItems: 'flex-end',
-    minWidth: 80,
-  },
-  billValue: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  alertBadge: {
+  cardStats: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: borderRadius.sm,
-    marginTop: 4,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statLabel: {
+    fontSize: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  statValue: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  statDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: 'rgba(0,0,0,0.08)',
+  },
+  addCardButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    gap: spacing.sm,
+  },
+  addIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addCardText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
+    gap: spacing.sm,
+  },
+  emptyText: {
+    fontSize: 14,
   },
 });
