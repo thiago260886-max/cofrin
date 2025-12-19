@@ -315,6 +315,12 @@ export default function Register({ navigation }: any) {
             Já tem conta? <Text style={styles.loginTextBold}>Fazer login</Text>
           </Text>
         </Pressable>
+
+        {/* Link para Termos de Uso */}
+        <Pressable onPress={() => navigation.navigate("Termos de Uso")} style={styles.termsButton}>
+          <MaterialCommunityIcons name="file-document-outline" size={16} color={palette.textMuted} />
+          <Text style={styles.termsText}>Termos de Uso</Text>
+        </Pressable>
       </View>
       <CustomAlert {...alertState} onClose={hideAlert} />
     </ScrollView>
@@ -516,5 +522,17 @@ const styles = StyleSheet.create({
   loginTextBold: {
     color: REGISTER_COLORS.primary,
     fontWeight: '700',
+  },
+  termsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  termsText: {
+    color: palette.textMuted,
+    fontSize: 13,
   },
 });

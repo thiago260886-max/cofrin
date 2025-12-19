@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Termos de Uso do aplicativo Cofrin - Versão 1.0.0 Beta">
+    <title>Termos de Uso - Cofrin v1.0.0</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+            color: white;
+            padding: 60px 20px 40px;
+            text-align: center;
+        }
+
+        .header-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 48px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header .version {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: -20px auto 60px;
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: -20px 16px 40px;
+                padding: 24px;
+            }
+        }
+
+        .warning-box {
+            background: #FEF3C7;
+            border: 1px solid #FDE68A;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 32px;
+            display: flex;
+            gap: 16px;
+        }
+
+        .warning-box::before {
+            content: "⚠️";
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .warning-content h3 {
+            color: #92400E;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .warning-content p {
+            color: #92400E;
+            font-size: 14px;
+        }
+
+        .section {
+            margin-bottom: 32px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .section-header::before {
+            font-size: 20px;
+        }
+
+        .section h2 {
+            color: #0d9488;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .section p {
+            margin-bottom: 12px;
+            color: #555;
+        }
+
+        .section ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .section li {
+            margin-bottom: 12px;
+            padding-left: 24px;
+            position: relative;
+            color: #555;
+        }
+
+        .section li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #0d9488;
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        .bold {
+            font-weight: 700;
+            color: #333;
+        }
+
+        .disclaimer-box {
+            background: #E0F2FE;
+            border: 1px solid #BAE6FD;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 32px;
+            display: flex;
+            gap: 16px;
+        }
+
+        .disclaimer-box::before {
+            content: "ℹ️";
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .disclaimer-box p {
+            color: #0C4A6E;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 1px solid #e5e5e5;
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+        }
+
+        .footer p {
+            margin-bottom: 4px;
+        }
+
+        .icon-shield::before { content: "🛡️"; }
+        .icon-user::before { content: "✅"; }
+        .icon-data::before { content: "💾"; }
+        .icon-flask::before { content: "🧪"; }
+        .icon-lock::before { content: "🔒"; }
+        .icon-hand::before { content: "👍"; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-icon">🐷</div>
+        <h1>Termos de Uso</h1>
+        <p class="version">Versão 1.0.0 - Beta</p>
+    </div>
+
+    <div class="container">
+        <!-- Alerta de Versão Beta -->
+        <div class="warning-box">
+            <div class="warning-content">
+                <h3>Versão de Testes (Beta)</h3>
+                <p>
+                    Este aplicativo está em fase de testes e desenvolvimento contínuo. 
+                    Podem ocorrer erros, inconsistências ou perda de dados.
+                </p>
+            </div>
+        </div>
+
+        <!-- Seção 1 -->
+        <div class="section">
+            <div class="section-header icon-shield">
+                <h2>1. Isenção de Responsabilidade</h2>
+            </div>
+            <p>
+                O aplicativo <span class="bold">Cofrin versão 1.0.0</span> é fornecido "como está", 
+                em caráter experimental e educacional. Os desenvolvedores <span class="bold">não se 
+                responsabilizam</span> por:
+            </p>
+            <ul>
+                <li>Erros de cálculo ou processamento de dados</li>
+                <li>Inconsistências nos relatórios gerados</li>
+                <li>Perda ou corrupção de dados armazenados</li>
+                <li>Decisões financeiras tomadas com base no aplicativo</li>
+                <li>Problemas técnicos, bugs ou falhas no sistema</li>
+                <li>Indisponibilidade temporária ou permanente do serviço</li>
+            </ul>
+        </div>
+
+        <!-- Seção 2 -->
+        <div class="section">
+            <div class="section-header icon-user">
+                <h2>2. Responsabilidade do Usuário</h2>
+            </div>
+            <p>Ao utilizar este aplicativo, você concorda e reconhece que:</p>
+            <ul>
+                <li>
+                    <span class="bold">Você é o único responsável</span> por validar todas as informações 
+                    apresentadas no aplicativo contra suas contas bancárias originais
+                </li>
+                <li>
+                    Deve <span class="bold">sempre consultar suas contas oficiais</span> (banco, cartão de 
+                    crédito, investimentos) antes de tomar qualquer decisão financeira
+                </li>
+                <li>
+                    Os relatórios e análises fornecidos pelo aplicativo são <span class="bold">apenas 
+                    ferramentas auxiliares</span> e não substituem consultoria financeira profissional
+                </li>
+                <li>
+                    Não deve tomar decisões financeiras importantes baseando-se exclusivamente nos dados do aplicativo
+                </li>
+                <li>
+                    É responsável por manter backups externos de suas informações financeiras
+                </li>
+            </ul>
+        </div>
+
+        <!-- Seção 3 -->
+        <div class="section">
+            <div class="section-header icon-data">
+                <h2>3. Precisão dos Dados</h2>
+            </div>
+            <p>Este aplicativo <span class="bold">não garante</span>:</p>
+            <ul>
+                <li>Precisão absoluta nos cálculos de saldo e despesas</li>
+                <li>Sincronização perfeita com suas contas bancárias reais</li>
+                <li>Atualização em tempo real das informações</li>
+                <li>Integridade permanente dos dados armazenados</li>
+            </ul>
+            <p>
+                <span class="bold">Importante:</span> O aplicativo funciona como um caderno digital 
+                para controle manual de finanças. Todas as informações inseridas são de responsabilidade 
+                do usuário e devem ser conferidas periodicamente.
+            </p>
+        </div>
+
+        <!-- Seção 4 -->
+        <div class="section">
+            <div class="section-header icon-flask">
+                <h2>4. Natureza Experimental</h2>
+            </div>
+            <p>Por ser uma versão beta (1.0.0), o aplicativo:</p>
+            <ul>
+                <li>Está em constante desenvolvimento e atualização</li>
+                <li>Pode apresentar bugs, falhas ou comportamentos inesperados</li>
+                <li>Pode sofrer alterações significativas sem aviso prévio</li>
+                <li>Pode ter funcionalidades removidas ou modificadas</li>
+                <li>Pode ser descontinuado a qualquer momento</li>
+            </ul>
+        </div>
+
+        <!-- Seção 5 -->
+        <div class="section">
+            <div class="section-header icon-lock">
+                <h2>5. Privacidade e Segurança</h2>
+            </div>
+            <p>Embora utilizemos medidas de segurança (Firebase Authentication), recomendamos:</p>
+            <ul>
+                <li>Não armazenar informações extremamente sensíveis</li>
+                <li>Usar senhas fortes e únicas</li>
+                <li>Não compartilhar suas credenciais de acesso</li>
+                <li>Fazer logout em dispositivos compartilhados</li>
+            </ul>
+        </div>
+
+        <!-- Seção 6 -->
+        <div class="section">
+            <div class="section-header icon-hand">
+                <h2>6. Aceitação dos Termos</h2>
+            </div>
+            <p>Ao utilizar este aplicativo, você declara que:</p>
+            <ul>
+                <li>Leu e compreendeu todos os termos acima</li>
+                <li>Aceita os riscos associados ao uso de software em versão beta</li>
+                <li>Concorda em não responsabilizar os desenvolvedores por erros ou perdas</li>
+                <li>Entende que este aplicativo é uma ferramenta auxiliar, não definitiva</li>
+            </ul>
+        </div>
+
+        <!-- Disclaimer Final -->
+        <div class="disclaimer-box">
+            <p>
+                <span class="bold">Use com responsabilidade!</span> Este aplicativo deve ser usado como 
+                uma ferramenta de apoio ao controle financeiro pessoal. Sempre valide suas informações com suas 
+                contas bancárias oficiais e consulte um profissional certificado para decisões financeiras importantes.
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Cofrin v1.0.0 - Beta</p>
+            <p>Última atualização: Dezembro 2025</p>
+            <p><a href="mailto:contato@cofrin.app" style="color: #0d9488; text-decoration: none;">Contato</a></p>
+        </div>
+    </div>
+</body>
+</html>

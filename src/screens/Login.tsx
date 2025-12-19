@@ -231,6 +231,12 @@ export default function Login({ navigation }: any) {
             Não tem conta? <Text style={styles.registerTextBold}>Criar agora</Text>
           </Text>
         </Pressable>
+
+        {/* Link para Termos de Uso */}
+        <Pressable onPress={() => navigation.navigate("Termos de Uso")} style={styles.termsButton}>
+          <MaterialCommunityIcons name="file-document-outline" size={16} color={palette.textMuted} />
+          <Text style={styles.termsText}>Termos de Uso</Text>
+        </Pressable>
       </View>
 
       {/* Overlay de Loading Fullscreen */}
@@ -426,6 +432,18 @@ const styles = StyleSheet.create({
   registerTextBold: {
     color: LOGIN_COLORS.primary,
     fontWeight: '700',
+  },
+  termsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  termsText: {
+    color: palette.textMuted,
+    fontSize: 13,
   },
   loadingOverlay: {
     position: 'absolute',

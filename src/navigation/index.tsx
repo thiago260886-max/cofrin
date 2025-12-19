@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import Login from "../screens/Login";
 import Register from "../screens/Register";
+import Terms from "../screens/Terms";
 import Home from "../screens/Home";
 import Settings from "../screens/Settings";
 import EditProfile from "../screens/EditProfile";
@@ -20,6 +21,18 @@ import Goals from "../screens/Goals";
 
 const Stack = createNativeStackNavigator();
 
+// Configuração de Deep Linking
+const linking = {
+  prefixes: ['cofrin://', 'https://cofrin.app', 'https://www.cofrin.app'],
+  config: {
+    screens: {
+      'Termos de Uso': 'termos',
+      'Faça login': 'login',
+      'Crie uma conta': 'registro',
+    },
+  },
+};
+
 export default function RootNavigation() {
   const { user, loading } = useAuth();
 
@@ -29,7 +42,7 @@ export default function RootNavigation() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       {user ? (
         // ROTAS DO USUÁRIO LOGADO
         <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -52,6 +65,7 @@ export default function RootNavigation() {
         <Stack.Navigator>
           <Stack.Screen name="Faça login" component={Login} options={{ headerShown: false }} />
           <Stack.Screen name="Crie uma conta" component={Register} options={{ headerShown: false }} />
+          <Stack.Screen name="Termos de Uso" component={Terms} options={{ headerShown: false }} />
         </Stack.Navigator>
       )}
     </NavigationContainer>
