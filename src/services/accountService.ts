@@ -3,22 +3,22 @@
 // ==========================================
 
 import {
-  collection,
-  doc,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  getDocs,
-  getDoc,
-  query,
-  where, Timestamp,
-  increment
+    collection,
+    doc,
+    addDoc,
+    updateDoc,
+    deleteDoc,
+    getDocs,
+    getDoc,
+    query,
+    where, Timestamp,
+    increment
 } from 'firebase/firestore';
 import { db, COLLECTIONS } from './firebase';
 import {
-  Account,
-  CreateAccountInput,
-  UpdateAccountInput,
+    Account,
+    CreateAccountInput,
+    UpdateAccountInput,
 } from '../types/firebase';
 import { deleteTransactionsByAccount } from './transactionService';
 
@@ -220,4 +220,77 @@ export async function setInitialBalance(
     initialBalanceSet: true,
     updatedAt: Timestamp.now(),
   });
+}
+// Recalcular saldo da conta com base nas transações reais
+// Esta função deve ser chamada quando houver suspeita de inconsistência
+export async function recalculateAccountBalance(
+  userId: string,
+  accountId: string
+): Promise<number> {
+  const account = await getAccountById(accountId);
+  if (!account) {
+    throw new Error('Conta não encontrada');
+  }
+
+  // Buscar todas as transações completed da conta
+  const transactionsRef = collection(db, COLLECTIONS.TRANSACTIONS);
+  
+  // Transações onde a conta é origem (accountId)
+  const q1 = query(
+    transactionsRef,
+    where('userId', '==', userId),
+    where('accountId', '==', accountId),
+    where('status', '==', 'completed')
+  );
+
+  // Transações onde a conta é destino (toAccountId) - transferências recebidas
+  const q2 = query(
+    transactionsRef,
+    where('userId', '==', userId),
+    where('toAccountId', '==', accountId),
+    where('status', '==', 'completed')
+  );
+
+  const [snapshot1, snapshot2] = await Promise.all([
+    getDocs(q1),
+    getDocs(q2)
+  ]);
+
+  let calculatedBalance = account.initialBalance || 0;
+
+  // Processar transações onde a conta é origem
+  snapshot1.forEach(doc => {
+    const transaction = doc.data();
+    // Pular transações de cartão de crédito (não afetam saldo da conta)
+    if (transaction.creditCardId) return;
+    
+    if (transaction.type === 'expense') {
+      // Despesa: subtrai
+      calculatedBalance -= transaction.amount;
+    } else if (transaction.type === 'income') {
+      // Receita: adiciona
+      calculatedBalance += transaction.amount;
+    } else if (transaction.type === 'transfer') {
+      // Transferência de saída: subtrai
+      calculatedBalance -= transaction.amount;
+    }
+  });
+
+  // Processar transações onde a conta é destino (transferências recebidas)
+  snapshot2.forEach(doc => {
+    const transaction = doc.data();
+    if (transaction.type === 'transfer' && transaction.accountId !== accountId) {
+      // Transferência de entrada: adiciona
+      calculatedBalance += transaction.amount;
+    }
+  });
+
+  // Atualizar o saldo da conta no banco
+  const accountDocRef = doc(db, COLLECTIONS.ACCOUNTS, accountId);
+  await updateDoc(accountDocRef, {
+    balance: calculatedBalance,
+    updatedAt: Timestamp.now(),
+  });
+
+  return calculatedBalance;
 }

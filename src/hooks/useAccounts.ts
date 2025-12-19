@@ -127,6 +127,23 @@ export function useAccounts(includeArchived: boolean = false) {
     }
   };
 
+  // Recalcular saldo da conta com base nas transações reais
+  const recalculateBalance = async (accountId: string): Promise<number | null> => {
+    if (!user?.uid) return null;
+    try {
+      const newBalance = await accountService.recalculateAccountBalance(user.uid, accountId);
+      // Atualizar localmente
+      setAccounts(prev =>
+        prev.map(acc => acc.id === accountId ? { ...acc, balance: newBalance } : acc)
+      );
+      return newBalance;
+    } catch (err) {
+      console.error('Erro ao recalcular saldo:', err);
+      setError('Erro ao recalcular saldo');
+      return null;
+    }
+  };
+
   // Calcular saldo total
   const totalBalance = accounts
     .filter(acc => acc.includeInTotal && !acc.isArchived)
@@ -149,5 +166,6 @@ export function useAccounts(includeArchived: boolean = false) {
     archiveAccount,
     unarchiveAccount,
     deleteAccount,
+    recalculateBalance,
   };
 }

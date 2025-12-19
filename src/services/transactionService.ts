@@ -450,6 +450,62 @@ export async function updateTransaction(
     updatedAt: Timestamp.now(),
   };
 
+  // Buscar nomes atualizados se os IDs mudaram
+  try {
+    // accountName
+    if (data.accountId !== undefined && data.accountId !== oldAccountId) {
+      if (data.accountId) {
+        const account = await getAccountById(data.accountId);
+        if (account) {
+          updateData.accountName = account.name;
+        }
+      } else {
+        updateData.accountName = null;
+      }
+    }
+
+    // categoryName e categoryIcon
+    if (data.categoryId !== undefined && data.categoryId !== oldTransaction.categoryId) {
+      if (data.categoryId) {
+        const category = await getCategoryById(data.categoryId);
+        if (category) {
+          updateData.categoryName = category.name;
+          updateData.categoryIcon = category.icon;
+        }
+      } else {
+        updateData.categoryName = null;
+        updateData.categoryIcon = null;
+      }
+    }
+
+    // toAccountName (para transferências)
+    if (data.toAccountId !== undefined && data.toAccountId !== oldToAccountId) {
+      if (data.toAccountId) {
+        const toAccount = await getAccountById(data.toAccountId);
+        if (toAccount) {
+          updateData.toAccountName = toAccount.name;
+        }
+      } else {
+        updateData.toAccountName = null;
+      }
+    }
+
+    // creditCardName
+    if (data.creditCardId !== undefined && data.creditCardId !== oldCreditCardId) {
+      if (data.creditCardId) {
+        const creditCard = await getCreditCardById(data.creditCardId);
+        if (creditCard) {
+          updateData.creditCardName = creditCard.name;
+        }
+      } else {
+        updateData.creditCardName = null;
+      }
+    }
+  } catch (error) {
+    console.error('Erro ao buscar nomes durante atualização:', error);
+    // Continua mesmo se houver erro ao buscar nomes
+  }
+
   // Atualizar mês/ano se a data mudou
   if (data.date) {
     const transactionDate = data.date.toDate();

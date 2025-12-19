@@ -65,6 +65,7 @@ export default function ConfigureAccounts({ navigation }: any) {
     updateAccount,
     archiveAccount,
     deleteAccount,
+    recalculateBalance,
   } = useAccounts();
 
   // Converter string de valor para número
@@ -163,6 +164,70 @@ export default function ConfigureAccounts({ navigation }: any) {
     if (!editingAccount) return;
     setAdjustBalanceValue(editingAccount.balance.toFixed(2).replace('.', ','));
     setAdjustBalanceModalVisible(true);
+  }
+
+  // Recalcular saldo da conta com base nas transações reais
+  async function handleRecalculateBalance() {
+    if (!editingAccount || !user?.uid) return;
+    
+    const currentBalance = editingAccount.balance;
+    
+    showAlert(
+      'Recalcular saldo?',
+      `Esta ação irá recalcular o saldo da conta com base em todos os lançamentos marcados como "concluídos".\n\nSaldo atual: ${formatCurrencyBRL(currentBalance)}\n\nDeseja continuar?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { 
+          text: 'Recalcular', 
+          style: 'default',
+          onPress: performRecalculate 
+        }
+      ]
+    );
+  }
+
+  async function performRecalculate() {
+    if (!editingAccount || !user?.uid) return;
+    
+    setSaving(true);
+    try {
+      const oldBalance = editingAccount.balance;
+      const newBalance = await recalculateBalance(editingAccount.id);
+      
+      if (newBalance === null) {
+        showAlert('Erro', 'Não foi possível recalcular o saldo', [{ text: 'OK', style: 'default' }]);
+        return;
+      }
+      
+      const difference = newBalance - oldBalance;
+      
+      // Fechar modal e limpar estado
+      setEditModalVisible(false);
+      setEditingAccount(null);
+      
+      // Notificar refresh para atualizar toda a UI
+      triggerRefresh();
+      
+      if (Math.abs(difference) < 0.01) {
+        showAlert(
+          'Saldo correto!',
+          `O saldo estava correto:\n${formatCurrencyBRL(newBalance)}`,
+          [{ text: 'OK', style: 'default' }]
+        );
+      } else {
+        const changeType = difference > 0 ? 'aumentou' : 'diminuiu';
+        showAlert(
+          'Saldo recalculado',
+          `O saldo ${changeType} ${formatCurrencyBRL(Math.abs(difference))}.\n\nSaldo anterior: ${formatCurrencyBRL(oldBalance)}\nNovo saldo: ${formatCurrencyBRL(newBalance)}`,
+          [{ text: 'OK', style: 'default' }]
+        );
+      }
+    } catch (err) {
+      console.error('Erro ao recalcular saldo:', err);
+      showAlert('Erro', 'Ocorreu um erro ao recalcular o saldo', [{ text: 'OK', style: 'default' }]);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function performBalanceAdjustment() {
@@ -779,6 +844,24 @@ export default function ConfigureAccounts({ navigation }: any) {
 
               {/* Ações */}
               <View style={styles.modalActionsColumn}>
+                {/* Botão de Recalcular Saldo */}
+                <Pressable
+                  onPress={handleRecalculateBalance}
+                  style={({ pressed }) => [
+                    styles.resetButton,
+                    { backgroundColor: colors.income + '15', borderColor: colors.income },
+                    pressed && { opacity: 0.7 },
+                  ]}
+                >
+                  <MaterialCommunityIcons name="calculator" size={20} color={colors.income} />
+                  <View style={styles.resetButtonText}>
+                    <Text style={[styles.actionButtonText, { color: colors.income }]}>Recalcular saldo</Text>
+                    <Text style={[styles.resetHint, { color: colors.textMuted }]}>
+                      Corrige inconsistências com base nos lançamentos
+                    </Text>
+                  </View>
+                </Pressable>
+
                 {/* Botão de Ajustar Saldo */}
                 <Pressable
                   onPress={handleAdjustBalance}

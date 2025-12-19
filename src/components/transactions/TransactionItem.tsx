@@ -49,8 +49,8 @@ function TransactionItemComponent({
   const getColor = () => {
     if (goalName) return goalColor; // Aporte em meta usa cor primária
     if (type === 'transfer') return transferColor;
-    if (type === 'paid' || amount < 0) return expenseColor;
-    return incomeColor;
+    if (type === 'paid') return expenseColor;
+    return incomeColor; // type === 'received'
   };
   
   const color = isLocked ? colors.textMuted : getColor();

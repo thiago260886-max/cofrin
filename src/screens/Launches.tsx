@@ -178,18 +178,25 @@ export default function Launches() {
   const listItems = useMemo(() => {
     return transactions
       .filter((t: Transaction) => !t.creditCardId && !t.creditCardBillId) // Exclui transações de cartão e pagamentos de fatura
-      .map((t: Transaction) => ({
-        id: t.id,
-        date: t.date.toDate().toISOString().split('T')[0],
-        title: t.description,
-        account: t.accountName || '',
-        amount: t.type === 'expense' ? -t.amount : t.amount,
-        type: t.type === 'transfer' ? 'transfer' : (t.type === 'expense' ? 'paid' : 'received'),
-        category: t.categoryName,
-        categoryIcon: t.categoryIcon,
-        status: t.status,
-        goalName: t.goalName, // Aporte em meta
-      }));
+      .map((t: Transaction) => {
+        // Usar valor absoluto para garantir consistência
+        const absAmount = Math.abs(t.amount);
+        // Aplicar sinal baseado no tipo
+        const amount = t.type === 'expense' ? -absAmount : absAmount;
+        
+        return {
+          id: t.id,
+          date: t.date.toDate().toISOString().split('T')[0],
+          title: t.description,
+          account: t.accountName || '',
+          amount,
+          type: t.type === 'transfer' ? 'transfer' : (t.type === 'expense' ? 'paid' : 'received'),
+          category: t.categoryName,
+          categoryIcon: t.categoryIcon,
+          status: t.status,
+          goalName: t.goalName, // Aporte em meta
+        };
+      });
   }, [transactions]) as Array<{
     id: string;
     date: string;
