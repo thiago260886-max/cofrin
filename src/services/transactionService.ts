@@ -23,7 +23,7 @@ import {
 import { updateAccountBalance } from './accountService';
 import { getCategoryById } from './categoryService';
 import { getAccountById } from './accountService';
-import { getCreditCardById, updateCreditCardUsage } from './creditCardService';
+import { getCreditCardById, updateCreditCardUsage, recalculateCreditCardUsage } from './creditCardService';
 import { removeFromGoalProgress } from './goalService';
 
 const transactionsRef = collection(db, COLLECTIONS.TRANSACTIONS);
@@ -503,6 +503,11 @@ export async function deleteTransaction(transaction: Transaction): Promise<void>
   // Deletar transação
   const docRef = doc(db, COLLECTIONS.TRANSACTIONS, transaction.id);
   await deleteDoc(docRef);
+
+  // Se for transação de cartão de crédito, recalcular o valor usado
+  if (transaction.creditCardId && transaction.userId) {
+    await recalculateCreditCardUsage(transaction.userId, transaction.creditCardId);
+  }
 }
 
 // Buscar transações por seriesId
@@ -976,6 +981,9 @@ export async function deleteTransactionsByCreditCard(
 
     const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
     await Promise.all(deletePromises);
+
+    // Recalcular o valor usado do cartão após deletar todas as transações
+    await recalculateCreditCardUsage(userId, creditCardId);
 
     return { deleted: snapshot.docs.length };
   } catch (error) {

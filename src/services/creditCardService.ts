@@ -147,6 +147,46 @@ export async function updateCreditCardUsage(
   });
 }
 
+// Recalcular valor usado do cartão com base nas transações reais
+// Esta função deve ser chamada após deletar transações para garantir consistência
+export async function recalculateCreditCardUsage(
+  userId: string,
+  cardId: string
+): Promise<number> {
+  // Buscar todas as transações do cartão
+  const transactionsRef = collection(db, COLLECTIONS.TRANSACTIONS);
+  const q = query(
+    transactionsRef,
+    where('userId', '==', userId),
+    where('creditCardId', '==', cardId)
+  );
+  
+  const snapshot = await getDocs(q);
+  
+  // Calcular valor usado real
+  let realUsed = 0;
+  snapshot.forEach(doc => {
+    const transaction = doc.data();
+    if (transaction.status === 'cancelled') return;
+    
+    // Despesa adiciona, receita (estorno) subtrai
+    if (transaction.type === 'expense') {
+      realUsed += transaction.amount;
+    } else if (transaction.type === 'income') {
+      realUsed -= transaction.amount;
+    }
+  });
+
+  // Atualizar o cartão com o valor real
+  const cardDocRef = doc(db, COLLECTIONS.CREDIT_CARDS, cardId);
+  await updateDoc(cardDocRef, {
+    currentUsed: realUsed,
+    updatedAt: Timestamp.now(),
+  });
+
+  return realUsed;
+}
+
 // ==========================================
 // FATURAS
 // ==========================================

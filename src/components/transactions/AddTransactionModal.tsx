@@ -217,13 +217,6 @@ export default function AddTransactionModal({
   useEffect(() => {
     // Não setar conta padrão se estiver editando uma transação
     if (activeAccounts.length > 0 && !accountId && !useCreditCard && !editTransaction) {
-      console.log('⚠️ [DEFAULT ACCOUNT] Setting default account:', {
-        account: activeAccounts[0],
-        isEditMode,
-        editTransaction: !!editTransaction,
-        useCreditCard,
-        accountId
-      });
       setAccountId(activeAccounts[0].id);
       setAccountName(activeAccounts[0].name);
       if (activeAccounts.length > 1) {
@@ -259,13 +252,6 @@ export default function AddTransactionModal({
       
       if (editTransaction) {
         // Populate form with existing transaction data
-        console.log('🔍 [EDIT MODE] editTransaction:', {
-          id: editTransaction.id,
-          accountId: editTransaction.accountId,
-          accountName: editTransaction.accountName,
-          creditCardId: editTransaction.creditCardId,
-          creditCardName: editTransaction.creditCardName,
-        });
         
         const localType: LocalTransactionType = 
           editTransaction.type === 'expense' ? 'despesa' : 
@@ -302,11 +288,6 @@ export default function AddTransactionModal({
           setCreditCardName('');
         } else if (editTransaction.creditCardId) {
           // Transaction is on credit card
-          console.log('✅ [EDIT MODE] Setting CREDIT CARD:', {
-            creditCardId: editTransaction.creditCardId,
-            creditCardName: editTransaction.creditCardName,
-            clearingAccount: true
-          });
           setUseCreditCard(true);
           setCreditCardId(editTransaction.creditCardId);
           setCreditCardName(editTransaction.creditCardName || '');
@@ -1307,14 +1288,6 @@ export default function AddTransactionModal({
                         value={useCreditCard ? creditCardName : (accountName || 'Selecione')}
                         icon={useCreditCard ? 'credit-card' : 'bank-outline'}
                         onPress={() => {
-                          console.log('📝 [FIELD CLICK] Current state:', {
-                            useCreditCard,
-                            creditCardId,
-                            creditCardName,
-                            accountId,
-                            accountName,
-                            isEditMode
-                          });
                           setActivePicker('account');
                         }}
                         subtitle={!useCreditCard && sourceAccount ? `Saldo atual: ${formatCurrency(Math.round(sourceAccount.balance * 100).toString())}` : undefined}
