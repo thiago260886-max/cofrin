@@ -271,15 +271,21 @@ export default function AddTransactionModal({
           setCategoryName(editTransaction.categoryName || '');
         }
         
-        // Account
+        // Account or Credit Card - clear the other when one is set
         if (editTransaction.accountId) {
           setAccountId(editTransaction.accountId);
           setAccountName(editTransaction.accountName || '');
           setUseCreditCard(false);
+          // Clear credit card fields
+          setCreditCardId('');
+          setCreditCardName('');
         } else if (editTransaction.creditCardId) {
           setUseCreditCard(true);
           setCreditCardId(editTransaction.creditCardId);
           setCreditCardName(editTransaction.creditCardName || '');
+          // Clear account fields
+          setAccountId('');
+          setAccountName('');
         }
         
         // To account (for transfers)
@@ -1134,14 +1140,6 @@ export default function AddTransactionModal({
                         <View style={{ alignItems: 'center' }}>
                           <Text
                             style={[ 
-                              styles.typeChipTitle,
-                              type === t && styles.typeChipTitleActive,
-                            ]}
-                          >
-                            {isEditMode ? 'Editar' : (t === 'transfer' ? 'Nova' : 'Nov' + (t === 'despesa' ? 'a' : 'a'))}
-                          </Text>
-                          <Text
-                            style={[ 
                               styles.typeChipText,
                               type === t && styles.typeChipTextActive,
                             ]}
@@ -1518,16 +1516,6 @@ const styles = StyleSheet.create({
   },
   typeChipActive: {
     backgroundColor: '#fff',
-  },
-  typeChipTitle: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.7)',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  typeChipTitleActive: {
-    color: '#64748b',
   },
   typeChipText: {
     fontSize: 14,
