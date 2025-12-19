@@ -1,16 +1,16 @@
 import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { palette, spacing, borderRadius } from "../theme";
 
-const LOGIN_COLORS = {
-  primary: '#0d9488',      // teal-600
-  primaryDark: '#0f766e',  // teal-700
-  primaryLight: '#14b8a6', // teal-500
+const TERMS_COLORS = {
+  primary: '#0F9D8C',
+  primaryDark: '#0d9488',
+  primaryLight: '#14b8a6',
 };
 
 export default function Terms({ navigation }: any) {
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
         <Pressable 
@@ -20,10 +20,11 @@ export default function Terms({ navigation }: any) {
           <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
         </Pressable>
         <View style={styles.iconContainer}>
-          <MaterialCommunityIcons name="file-document-outline" size={48} color="#fff" />
+          <MaterialCommunityIcons name="piggy-bank" size={56} color="#fff" />
         </View>
+        <Text style={styles.appName}>Cofrin</Text>
+        <Text style={styles.tagline}>Controle financeiro pessoal</Text>
         <Text style={styles.headerTitle}>Termos de Uso</Text>
-        <Text style={styles.headerSubtitle}>Versão 1.0.0 - Beta</Text>
       </View>
 
       {/* Content */}
@@ -44,7 +45,7 @@ export default function Terms({ navigation }: any) {
           {/* Seção 1 */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <MaterialCommunityIcons name="shield-alert-outline" size={20} color={LOGIN_COLORS.primary} />
+              <MaterialCommunityIcons name="shield-alert-outline" size={20} color={TERMS_COLORS.primary} />
               <Text style={styles.sectionTitle}>1. Isenção de Responsabilidade</Text>
             </View>
             <Text style={styles.paragraph}>
@@ -65,7 +66,7 @@ export default function Terms({ navigation }: any) {
           {/* Seção 2 */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <MaterialCommunityIcons name="account-check-outline" size={20} color={LOGIN_COLORS.primary} />
+              <MaterialCommunityIcons name="account-check-outline" size={20} color={TERMS_COLORS.primary} />
               <Text style={styles.sectionTitle}>2. Responsabilidade do Usuário</Text>
             </View>
             <Text style={styles.paragraph}>
@@ -96,7 +97,7 @@ export default function Terms({ navigation }: any) {
           {/* Seção 3 */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <MaterialCommunityIcons name="database-alert-outline" size={20} color={LOGIN_COLORS.primary} />
+              <MaterialCommunityIcons name="database-alert-outline" size={20} color={TERMS_COLORS.primary} />
               <Text style={styles.sectionTitle}>3. Precisão dos Dados</Text>
             </View>
             <Text style={styles.paragraph}>
@@ -118,7 +119,7 @@ export default function Terms({ navigation }: any) {
           {/* Seção 4 */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <MaterialCommunityIcons name="flask-outline" size={20} color={LOGIN_COLORS.primary} />
+              <MaterialCommunityIcons name="flask-outline" size={20} color={TERMS_COLORS.primary} />
               <Text style={styles.sectionTitle}>4. Natureza Experimental</Text>
             </View>
             <Text style={styles.paragraph}>
@@ -136,7 +137,7 @@ export default function Terms({ navigation }: any) {
           {/* Seção 5 */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <MaterialCommunityIcons name="shield-lock-outline" size={20} color={LOGIN_COLORS.primary} />
+              <MaterialCommunityIcons name="shield-lock-outline" size={20} color={TERMS_COLORS.primary} />
               <Text style={styles.sectionTitle}>5. Privacidade e Segurança</Text>
             </View>
             <Text style={styles.paragraph}>
@@ -153,7 +154,7 @@ export default function Terms({ navigation }: any) {
           {/* Seção 6 */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <MaterialCommunityIcons name="hand-okay" size={20} color={LOGIN_COLORS.primary} />
+              <MaterialCommunityIcons name="hand-okay" size={20} color={TERMS_COLORS.primary} />
               <Text style={styles.sectionTitle}>6. Aceitação dos Termos</Text>
             </View>
             <Text style={styles.paragraph}>
@@ -169,7 +170,7 @@ export default function Terms({ navigation }: any) {
 
           {/* Disclaimer Final */}
           <View style={styles.disclaimerBox}>
-            <MaterialCommunityIcons name="information" size={20} color={LOGIN_COLORS.primary} />
+            <MaterialCommunityIcons name="information" size={20} color={TERMS_COLORS.primary} />
             <Text style={styles.disclaimerText}>
               <Text style={styles.bold}>Use com responsabilidade!</Text> Este aplicativo deve ser usado como 
               uma ferramenta de apoio ao controle financeiro pessoal. Sempre valide suas informações com suas 
@@ -198,73 +199,79 @@ export default function Terms({ navigation }: any) {
           <MaterialCommunityIcons name="check" size={20} color="#fff" />
         </Pressable>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: LOGIN_COLORS.primary,
+    backgroundColor: '#0F9D8C',
   },
   header: {
-    paddingTop: spacing.xl * 2,
-    paddingBottom: spacing.xl,
-    paddingHorizontal: spacing.lg,
+    paddingTop: 16,
+    paddingBottom: 16,
+    paddingHorizontal: 24,
     alignItems: 'center',
     position: 'relative',
   },
   backButton: {
     position: 'absolute',
-    top: spacing.xl * 2,
-    left: spacing.lg,
+    top: 16,
+    left: 24,
     width: 40,
     height: 40,
     borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 10,
   },
   iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.md,
+    marginBottom: 12,
   },
-  headerTitle: {
-    fontSize: 24,
+  appName: {
+    fontSize: 28,
     fontWeight: '700',
     color: '#fff',
-    marginBottom: spacing.xs,
+    marginBottom: 4,
   },
-  headerSubtitle: {
+  tagline: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.95)',
+    marginBottom: 12,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#fff',
   },
   scrollContent: {
     flex: 1,
   },
   scrollContainer: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl * 6,
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 120,
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: borderRadius.xl,
-    padding: spacing.lg,
-    marginTop: -spacing.md,
+    backgroundColor: '#F7F6F2',
+    borderRadius: 16,
+    padding: 20,
   },
   warningBox: {
     backgroundColor: '#FEF3C7',
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
+    borderRadius: 12,
+    padding: 16,
     flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
+    gap: 12,
+    marginBottom: 20,
     borderWidth: 1,
     borderColor: '#FDE68A',
   },
@@ -275,7 +282,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#92400E',
-    marginBottom: spacing.xs,
+    marginBottom: 4,
   },
   warningText: {
     fontSize: 14,
@@ -283,44 +290,44 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   section: {
-    marginBottom: spacing.lg,
+    marginBottom: 20,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
+    gap: 8,
+    marginBottom: 8,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: palette.text,
+    color: '#2E2E2E',
   },
   paragraph: {
     fontSize: 14,
     lineHeight: 22,
-    color: palette.text,
-    marginBottom: spacing.sm,
+    color: '#2E2E2E',
+    marginBottom: 8,
   },
   bold: {
     fontWeight: '700',
   },
   list: {
-    paddingLeft: spacing.sm,
-    gap: spacing.sm,
+    paddingLeft: 8,
+    gap: 8,
   },
   listItem: {
     fontSize: 14,
     lineHeight: 22,
-    color: palette.text,
+    color: '#2E2E2E',
   },
   disclaimerBox: {
     backgroundColor: '#E0F2FE',
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
+    borderRadius: 12,
+    padding: 16,
     flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.md,
+    gap: 8,
+    marginTop: 16,
     borderWidth: 1,
     borderColor: '#BAE6FD',
   },
@@ -331,37 +338,32 @@ const styles = StyleSheet.create({
     color: '#0C4A6E',
   },
   footer: {
-    marginTop: spacing.lg,
-    paddingTop: spacing.lg,
+    marginTop: 20,
+    paddingTop: 20,
     borderTopWidth: 1,
-    borderTopColor: palette.border,
+    borderTopColor: 'rgba(0,0,0,0.1)',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: 4,
   },
   footerText: {
     fontSize: 12,
-    color: palette.textMuted,
+    color: '#6B6B6B',
   },
   bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     backgroundColor: '#fff',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    paddingBottom: spacing.lg,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
     borderTopWidth: 1,
-    borderTopColor: palette.border,
+    borderTopColor: 'rgba(0,0,0,0.1)',
   },
   acceptButton: {
-    backgroundColor: LOGIN_COLORS.primary,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.lg,
+    backgroundColor: '#0F9D8C',
+    paddingVertical: 14,
+    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
+    gap: 8,
   },
   buttonPressed: {
     opacity: 0.8,
