@@ -177,6 +177,9 @@ export default function AddTransactionModal({
   // Controlar autoFocus apenas na abertura inicial
   const shouldAutoFocus = useRef(false);
   
+  // Ref para o campo de valor
+  const amountInputRef = useRef<TextInput>(null);
+  
   // Custom alert hook
   const { alertState, showAlert, hideAlert } = useCustomAlert();
   
@@ -209,13 +212,39 @@ export default function AddTransactionModal({
     return true;
   }, [type, accountId, toAccountId]);
 
-  // Limpar categoria quando mudar para transferência
+  // Filtrar categorias por tipo
+  const filteredCategories = React.useMemo(() => {
+    if (type === 'transfer') return [];
+    const categoryType = type === 'despesa' ? 'expense' : 'income';
+    return categories.filter(c => c.type === categoryType);
+  }, [categories, type]);
+
+  // Atualizar categoria quando mudar o tipo (despesa/receita)
   useEffect(() => {
     if (type === 'transfer') {
+      // Limpar categoria para transferências
       setCategoryId('');
       setCategoryName('');
+    } else if (!editTransaction) {
+      // Atualizar categoria padrão baseado no tipo (apenas para novas transações)
+      const categoryType = type === 'despesa' ? 'expense' : 'income';
+      const availableCategories = categories.filter(c => c.type === categoryType);
+      
+      if (availableCategories.length > 0) {
+        // Tentar manter a categoria se for do mesmo tipo, senão usar padrão
+        const currentCat = categories.find(c => c.id === categoryId);
+        if (currentCat && currentCat.type === categoryType) {
+          // Categoria atual é do tipo correto, manter
+          return;
+        }
+        
+        // Selecionar categoria padrão do novo tipo
+        const defaultCat = availableCategories.find(c => c.name === 'Outros') || availableCategories[0];
+        setCategoryId(defaultCat.id);
+        setCategoryName(defaultCat.name);
+      }
     }
-  }, [type]);
+  }, [type, categories, editTransaction]);
 
   // Set default account when accounts load (only for new transactions)
   useEffect(() => {
@@ -245,6 +274,11 @@ export default function AddTransactionModal({
     if (visible) {
       // Ativar autoFocus apenas na abertura
       shouldAutoFocus.current = true;
+      
+      // Focar campo de valor após um pequeno delay
+      setTimeout(() => {
+        amountInputRef.current?.focus();
+      }, 300);
       
       // Recarregar listas quando abrir (corrige UI desatualizada após criar/editar/excluir)
       refreshCategories();
@@ -1176,6 +1210,7 @@ export default function AddTransactionModal({
                   )}
                   {/* Amount input */}
                   <TextInput
+                    ref={amountInputRef}
                     value={amount}
                     onChangeText={handleAmountChange}
                     keyboardType="numeric"
@@ -1183,7 +1218,6 @@ export default function AddTransactionModal({
                     placeholderTextColor="rgba(255,255,255,0.6)"
                     selectionColor="#fff"
                     editable={activeAccounts.length > 0 && !isGoalTransaction}
-                    autoFocus={activeAccounts.length > 0 && shouldAutoFocus.current && !isGoalTransaction}
                     onFocus={() => { shouldAutoFocus.current = false; }}
                   />
                 </View>
