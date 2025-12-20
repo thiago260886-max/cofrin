@@ -113,7 +113,7 @@ export default function Goals() {
             </View>
 
             {/* Quick Tips Section */}
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>💡 Dicas rápidas</Text>
+            <Text style={[styles.sectionTitle, { color: '#4A2FA8' }]}>💡 Dicas rápidas</Text>
             <View style={styles.tipsList}>
               {tips.map((tip, index) => (
                 <TipCard key={tip.id} tip={tip} index={index} />
@@ -121,7 +121,7 @@ export default function Goals() {
             </View>
 
             {/* Books Section */}
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>📚 Livros recomendados</Text>
+            <Text style={[styles.sectionTitle, { color: '#4A2FA8' }]}>📚 Livros recomendados</Text>
             <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
               Os melhores livros para começar sua jornada financeira
             </Text>

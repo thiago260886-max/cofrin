@@ -25,13 +25,18 @@ const getAccountIcon = (type: string): string => {
 
 const getAccountColor = (type: string): string => {
   switch (type) {
-    case 'checking': return '#3b82f6';
+    case 'checking': return '#5B3CC4'; // roxo principal
     case 'savings': return '#2FAF8E';  // verde elegante do design system
-    case 'investment': return '#5B3CC4'; // roxo principal
+    case 'investment': return '#7B5CD6'; // roxo claro
     case 'cash': return '#E07A3F';  // laranja atenção
     default: return '#9A96B0';  // cinza arroxeado
   }
 };
+
+// Cor roxa escura para títulos principais
+const primaryDark = '#4A2FA8';
+// Fundo mais claro para visual moderno
+const lightBg = '#FAFAFA';
 
 export default function AccountsCard({ accounts = [], onAccountPress, onAddPress }: Props) {
   const { colors } = useAppTheme();
@@ -48,7 +53,7 @@ export default function AccountsCard({ accounts = [], onAccountPress, onAddPress
         style={({ pressed }) => [
           styles.accountItem,
           { 
-            backgroundColor: colors.bg,
+            backgroundColor: lightBg,
             borderColor: colors.border,
             opacity: pressed ? 0.7 : 1,
           }
@@ -99,7 +104,7 @@ export default function AccountsCard({ accounts = [], onAccountPress, onAddPress
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.titleSection}>
-          <Text style={[styles.title, { color: '#1F2937' }]}>
+          <Text style={[styles.title, { color: primaryDark }]}>
             Onde está meu dinheiro
           </Text>
           {accounts.length > 0 && (

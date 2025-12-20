@@ -15,11 +15,24 @@ interface Props {
 
 // Cores para os cartões baseado no nome (paleta harmônica com roxo)
 const getCardColor = (name: string, customColor?: string): string => {
+  // Lista de cores azuis que devem ser substituídas por roxo
+  const blueColors = ['#3B82F6', '#3b82f6', '#06b6d4', '#0ea5e9', '#2563eb', '#1d4ed8'];
+  
+  // Se a cor customizada for azul, usar roxo principal
+  if (customColor && blueColors.includes(customColor.toLowerCase())) {
+    return '#5B3CC4'; // roxo principal
+  }
+  
   if (customColor) return customColor;
-  const colors = ['#5B3CC4', '#7B5CD6', '#2FAF8E', '#E07A3F', '#ec4899', '#06b6d4', '#3b82f6'];
+  const colors = ['#5B3CC4', '#7B5CD6', '#2FAF8E', '#E07A3F', '#ec4899', '#C4572D'];
   const index = name.charCodeAt(0) % colors.length;
   return colors[index];
 };
+
+// Cor roxa escura para títulos principais
+const primaryDark = '#4A2FA8';
+// Fundo mais claro para visual moderno
+const lightBg = '#FAFAFA';
 
 export default function CreditCardsCard({ cards = [], totalBills = 0, onCardPress, onAddPress }: Props) {
   const { colors } = useAppTheme();
@@ -50,7 +63,7 @@ export default function CreditCardsCard({ cards = [], totalBills = 0, onCardPres
         style={({ pressed }) => [
           styles.cardItem,
           { 
-            backgroundColor: colors.bg,
+            backgroundColor: lightBg,
             borderColor: colors.border,
             opacity: pressed ? 0.7 : 1,
           }
@@ -103,7 +116,7 @@ export default function CreditCardsCard({ cards = [], totalBills = 0, onCardPres
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.titleSection}>
-          <Text style={[styles.title, { color: colors.text }]}>
+          <Text style={[styles.title, { color: primaryDark }]}>
             Meus cartões
           </Text>
           {cards.length > 0 && (

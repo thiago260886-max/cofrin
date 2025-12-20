@@ -19,11 +19,13 @@ const CATEGORY_COLORS = [
   '#E07A3F', // laranja atenção
   '#2FAF8E', // verde elegante
   '#3DC9A0', // verde claro
-  '#3B82F6', // azul
   '#06B6D4', // cyan
   '#EC4899', // rosa
   '#F59E0B', // âmbar
 ];
+
+// Cor roxa escura para títulos
+const primaryDark = '#4A2FA8';
 
 type TopCount = 3 | 5 | 10;
 
@@ -71,7 +73,7 @@ export default function TopExpensesCard({ onDetailsPress }: Props) {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.titleSection}>
-          <Text style={[styles.title, { color: colors.text }]}>
+          <Text style={[styles.title, { color: primaryDark }]}>
             Maiores gastos
           </Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>

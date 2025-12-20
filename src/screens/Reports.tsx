@@ -219,7 +219,7 @@ export default function Reports() {
       >
         <View style={styles.centeredContainer}>
           <View style={styles.content}>
-            <Text style={[styles.title, { color: colors.text }]}>Relatórios</Text>
+            <Text style={[styles.title, { color: '#4A2FA8' }]}>Relatórios</Text>
             <Text style={[styles.subtitle, { color: colors.textMuted }]}>
               {monthNames[currentMonth - 1]} de {currentYear}
             </Text>
@@ -241,7 +241,7 @@ export default function Reports() {
             )}
 
             {/* Cards de estatísticas */}
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            <Text style={[styles.sectionTitle, { color: '#4A2FA8' }]}>
               Resumo financeiro
             </Text>
             

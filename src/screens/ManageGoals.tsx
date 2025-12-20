@@ -381,7 +381,7 @@ export default function ManageGoals() {
                 <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
               </Pressable>
               <View style={styles.headerTextContainer}>
-                <Text style={[styles.title, { color: colors.text }]}>Acompanhar minhas metas</Text>
+                <Text style={[styles.title, { color: '#4A2FA8' }]}>Acompanhar minhas metas</Text>
                 <Text style={[styles.subtitle, { color: colors.textMuted }]}>
                   {goals.length} {goals.length === 1 ? 'meta ativa' : 'metas ativas'}
                 </Text>

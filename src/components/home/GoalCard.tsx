@@ -5,6 +5,12 @@ import { useAppTheme } from '../../contexts/themeContext';
 import { getShadow } from '../../theme';
 import { Goal } from '../../types/firebase';
 
+// Cores do design system - Roxo
+const primaryDark = '#4A2FA8';   // roxo escuro (títulos h1)
+const primary = '#5B3CC4';       // roxo principal (botões, ícones)
+const primaryBg = '#EDE9FF';     // fundo roxo suave (backgrounds de ícones)
+const progressBg = '#E8E6F3';    // fundo barras de progresso
+
 interface Props {
   goal: Goal | null;
   progressPercentage: number;
@@ -21,13 +27,13 @@ export default function GoalCard({ goal, progressPercentage, onCreatePress, onMa
     return (
       <View style={[styles.card, { backgroundColor: '#fff' }, getShadow(colors)]}>
         <View style={styles.header}>
-          <View style={[styles.iconCircle, { backgroundColor: '#DBEAFE' }]}>
-            <MaterialCommunityIcons name="target" size={20} color="#3B82F6" />
+          <View style={[styles.iconCircle, { backgroundColor: primaryBg }]}>
+            <MaterialCommunityIcons name="target" size={20} color={primary} />
           </View>
-          <Text style={[styles.title, { color: '#1F2937' }]}>Meta financeira</Text>
+          <Text style={[styles.title, { color: primaryDark }]}>Meta financeira</Text>
         </View>
 
-        <Text style={[styles.emptyText, { color: '#9CA3AF' }]}>
+        <Text style={[styles.emptyText, { color: colors.textMuted }]}>
           Ter um objetivo claro torna suas escolhas financeiras mais fáceis.
         </Text>
 
@@ -35,7 +41,7 @@ export default function GoalCard({ goal, progressPercentage, onCreatePress, onMa
           onPress={onCreatePress}
           style={({ pressed }) => [
             styles.createButton,
-            { backgroundColor: '#3B82F6' },
+            { backgroundColor: primary },
             pressed && { opacity: 0.85 }
           ]}
         >
@@ -55,16 +61,16 @@ export default function GoalCard({ goal, progressPercentage, onCreatePress, onMa
       ]}
     >
       <View style={styles.header}>
-        <View style={[styles.iconCircle, { backgroundColor: '#DBEAFE' }]}>
+        <View style={[styles.iconCircle, { backgroundColor: primaryBg }]}>
           <MaterialCommunityIcons 
             name={(goal.icon as any) || 'target'} 
             size={20} 
-            color="#3B82F6" 
+            color={primary} 
           />
         </View>
         <View style={styles.goalHeaderText}>
-          <Text style={styles.goalTitle}>Objetivos em andamento</Text>
-          <Text style={[styles.goalName, { color: '#1F2937' }]} numberOfLines={1}>
+          <Text style={[styles.goalTitle, { color: colors.textMuted }]}>Objetivos em andamento</Text>
+          <Text style={[styles.goalName, { color: colors.text }]} numberOfLines={1}>
             {goal.name}
           </Text>
         </View>
@@ -72,18 +78,18 @@ export default function GoalCard({ goal, progressPercentage, onCreatePress, onMa
 
       {/* Barra de progresso */}
       <View style={styles.progressSection}>
-        <View style={[styles.progressTrack, { backgroundColor: '#E5E7EB' }]}>
+        <View style={[styles.progressTrack, { backgroundColor: progressBg }]}>
           <View 
             style={[
               styles.progressFill, 
               { 
                 width: `${Math.min(progressPercentage, 100)}%`,
-                backgroundColor: '#3B82F6'
+                backgroundColor: primary
               }
             ]} 
           />
         </View>
-        <Text style={[styles.progressText, { color: '#3B82F6' }]}>
+        <Text style={[styles.progressText, { color: primary }]}>
           {Math.round(progressPercentage)}%
         </Text>
       </View>
@@ -94,18 +100,18 @@ export default function GoalCard({ goal, progressPercentage, onCreatePress, onMa
           onPress={onAddPress}
           style={({ pressed }) => [
             styles.addButton,
-            { backgroundColor: '#F3F4F6', borderColor: '#E5E7EB' },
+            { backgroundColor: colors.grayLight, borderColor: colors.border },
             pressed && { opacity: 0.7 }
           ]}
         >
-          <Text style={[styles.addButtonText, { color: '#6B7280' }]}>Adicionar progresso</Text>
+          <Text style={[styles.addButtonText, { color: colors.textSecondary }]}>Adicionar progresso</Text>
         </Pressable>
 
         <Pressable
           onPress={onManagePress}
           style={({ pressed }) => [
             styles.manageButton,
-            { backgroundColor: '#3B82F6' },
+            { backgroundColor: primary },
             pressed && { opacity: 0.85 }
           ]}
         >
@@ -155,7 +161,6 @@ const styles = StyleSheet.create({
   goalTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#9CA3AF',
   },
   emptyText: {
     fontSize: 14,

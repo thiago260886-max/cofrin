@@ -4,6 +4,12 @@ import { useAppTheme } from '../../contexts/themeContext';
 import { getShadow } from '../../theme';
 import { formatCurrencyBRL } from '../../utils/format';
 
+// Cores do design system - Roxo
+const primaryDark = '#4A2FA8';   // roxo escuro (títulos h1)
+const primary = '#5B3CC4';       // roxo principal (ícones, barras)
+const primaryBg = '#EDE9FF';     // fundo roxo suave
+const progressBg = '#E8E6F3';    // fundo barras de progresso
+
 interface CategoryExpense {
   categoryId: string;
   categoryName: string;
@@ -24,8 +30,8 @@ export default function TopCategoryCard({ expenses, totalExpenses, onPress }: To
   if (!expenses || expenses.length === 0) {
     return (
       <View style={[styles.card, { backgroundColor: '#fff' }, getShadow(colors)]}>
-        <Text style={[styles.title, { color: '#1F2937' }]}>Onde você gastou</Text>
-        <Text style={[styles.emptyText, { color: '#9CA3AF' }]}>
+        <Text style={[styles.title, { color: primaryDark }]}>Onde você gastou</Text>
+        <Text style={[styles.emptyText, { color: colors.textMuted }]}>
           Nenhuma despesa registrada este mês
         </Text>
       </View>
@@ -54,33 +60,33 @@ export default function TopCategoryCard({ expenses, totalExpenses, onPress }: To
     >
       {/* Header */}
       <View style={styles.header}>
-        <View style={[styles.iconContainer, { backgroundColor: '#DBEAFE' }]}>
+        <View style={[styles.iconContainer, { backgroundColor: primaryBg }]}>
           <MaterialCommunityIcons 
             name={(topCategory.icon || 'tag') as any} 
             size={20} 
-            color="#3B82F6" 
+            color={primary} 
           />
         </View>
         <View style={styles.headerText}>
-          <Text style={[styles.title, { color: '#1F2937' }]}>Onde você gastou</Text>
-          <Text style={[styles.categoryName, { color: '#6B7280' }]}>
+          <Text style={[styles.title, { color: primaryDark }]}>Onde você gastou</Text>
+          <Text style={[styles.categoryName, { color: colors.textSecondary }]}>
             {topCategory.categoryName}
           </Text>
         </View>
       </View>
 
       {/* Valor */}
-      <Text style={[styles.categoryAmount, { color: '#1F2937' }]}>
+      <Text style={[styles.categoryAmount, { color: colors.text }]}>
         {formatCurrencyBRL(topCategory.total)}
       </Text>
 
       {/* Progress Bar */}
-      <View style={[styles.progressTrack, { backgroundColor: '#E5E7EB' }]}>
+      <View style={[styles.progressTrack, { backgroundColor: progressBg }]}>
         <View 
           style={[
             styles.progressFill, 
             { 
-              backgroundColor: '#3B82F6', 
+              backgroundColor: primary, 
               width: `${Math.min(percentage, 100)}%` 
             }
           ]} 
@@ -88,7 +94,7 @@ export default function TopCategoryCard({ expenses, totalExpenses, onPress }: To
       </View>
 
       {/* Insight */}
-      <Text style={[styles.insight, { color: '#9CA3AF' }]}>
+      <Text style={[styles.insight, { color: colors.textMuted }]}>
         {getInsight()}
       </Text>
     </Pressable>

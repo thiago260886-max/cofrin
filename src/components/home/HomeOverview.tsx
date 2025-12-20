@@ -20,12 +20,15 @@ export default function HomeOverview({
 }: Props) {
   const { colors } = useAppTheme();
 
-  // Determinar saudação baseada na hora
+  // Cor roxa escura para títulos principais
+  const primaryDark = '#4A2FA8';
+
+  // Determinar saudação e ícone baseado na hora
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return { text: 'Bom dia', emoji: '👋' };
-    if (hour < 18) return { text: 'Boa tarde', emoji: '👋' };
-    return { text: 'Boa noite', emoji: '👋' };
+    if (hour >= 5 && hour < 12) return { text: 'Bom dia', icon: 'weather-sunny' as const };
+    if (hour >= 12 && hour < 18) return { text: 'Boa tarde', icon: 'weather-partly-cloudy' as const };
+    return { text: 'Boa noite', icon: 'weather-night' as const };
   };
 
   // Formatar data amigável
@@ -56,9 +59,17 @@ export default function HomeOverview({
     <View style={styles.container}>
       {/* Saudação */}
       <View style={styles.greetingSection}>
-        <Text style={[styles.greeting, { color: colors.text }]}>
-          {greeting.text}, {username} {greeting.emoji}
-        </Text>
+        <View style={styles.greetingRow}>
+          <Text style={[styles.greeting, { color: primaryDark }]}>
+            {greeting.text}, {username}
+          </Text>
+          <MaterialCommunityIcons 
+            name={greeting.icon} 
+            size={28} 
+            color={primaryDark} 
+            style={styles.greetingIcon}
+          />
+        </View>
         <Text style={[styles.dateText, { color: colors.textMuted }]}>
           {friendlyDate}
         </Text>
@@ -107,6 +118,13 @@ const styles = StyleSheet.create({
   },
   greetingSection: {
     gap: 4,
+  },
+  greetingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  greetingIcon: {
+    marginLeft: 8,
   },
   greeting: {
     fontSize: 28,
