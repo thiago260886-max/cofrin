@@ -37,8 +37,8 @@ export default function CreditCardsCard({ cards = [], totalBills = 0, onCardPres
     const isOverdue = !isPaid && today > card.dueDay;
     
     const getStatusBadge = () => {
-      if (isOverdue) return { text: 'Vencida', color: '#C4572D' };
-      if (isPending) return { text: 'Pendente', color: '#9A96B0' };
+      if (isOverdue) return { text: 'Vencida', color: colors.expense };
+      if (isPending) return { text: 'Pendente', color: colors.textMuted };
       return null;
     };
     
@@ -50,7 +50,7 @@ export default function CreditCardsCard({ cards = [], totalBills = 0, onCardPres
         style={({ pressed }) => [
           styles.cardItem,
           { 
-            backgroundColor: colors.grayLight,
+            backgroundColor: colors.bg,
             borderColor: colors.border,
             opacity: pressed ? 0.7 : 1,
           }
@@ -66,7 +66,7 @@ export default function CreditCardsCard({ cards = [], totalBills = 0, onCardPres
                 color={cardColor}
               />
             </View>
-            <Text style={[styles.cardNameCompact, { color: '#1F2937' }]} numberOfLines={1}>
+            <Text style={[styles.cardNameCompact, { color: colors.text }]} numberOfLines={1}>
               {card.name}
             </Text>
             {statusBadge && (
@@ -81,14 +81,14 @@ export default function CreditCardsCard({ cards = [], totalBills = 0, onCardPres
           {/* Vencimento + Valor da fatura */}
           <View style={styles.infoRow}>
             <View style={styles.infoItem}>
-              <Text style={[styles.infoLabel, { color: '#9CA3AF' }]}>Vencimento</Text>
-              <Text style={[styles.infoValue, { color: '#1F2937' }]}>
+              <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Vencimento</Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>
                 Dia {card.dueDay}
               </Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={[styles.infoLabel, { color: '#9CA3AF' }]}>Valor da fatura</Text>
-              <Text style={[styles.infoValue, { color: '#1F2937' }]}>
+              <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Valor da fatura</Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>
                 {formatCurrencyBRL(used)}
               </Text>
             </View>
@@ -103,11 +103,11 @@ export default function CreditCardsCard({ cards = [], totalBills = 0, onCardPres
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.titleSection}>
-          <Text style={[styles.title, { color: '#1F2937' }]}>
+          <Text style={[styles.title, { color: colors.text }]}>
             Meus cartões
           </Text>
           {cards.length > 0 && (
-            <Text style={[styles.subtitle, { color: '#9CA3AF' }]}>
+            <Text style={[styles.subtitle, { color: colors.textMuted }]}>
               {cards.length} cartão{cards.length > 1 ? 'es' : ''} cadastrado{cards.length > 1 ? 's' : ''}
             </Text>
           )}
@@ -124,8 +124,8 @@ export default function CreditCardsCard({ cards = [], totalBills = 0, onCardPres
       {/* Mensagem vazia */}
       {cards.length === 0 && (
         <View style={styles.emptyState}>
-          <MaterialCommunityIcons name="credit-card-plus" size={48} color="#9CA3AF" />
-          <Text style={[styles.emptyText, { color: '#9CA3AF' }]}>
+          <MaterialCommunityIcons name="credit-card-plus" size={48} color={colors.textMuted} />
+          <Text style={[styles.emptyText, { color: colors.textMuted }]}>
             Nenhum cartão cadastrado
           </Text>
         </View>

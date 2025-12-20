@@ -64,9 +64,12 @@ export default function GoalCard({ goal, progressPercentage, onCreatePress, onGo
             color="#3B82F6" 
           />
         </View>
-        <Text style={[styles.goalName, { color: '#1F2937' }]} numberOfLines={1}>
-          {goal.name}
-        </Text>
+        <View style={styles.goalHeaderText}>
+          <Text style={styles.goalTitle}>Objetivos em andamento</Text>
+          <Text style={[styles.goalName, { color: '#1F2937' }]} numberOfLines={1}>
+            {goal.name}
+          </Text>
+        </View>
       </View>
 
       {/* Barra de progresso */}
@@ -135,7 +138,15 @@ const styles = StyleSheet.create({
   goalName: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  goalHeaderText: {
     flex: 1,
+    gap: 2,
+  },
+  goalTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#9CA3AF',
   },
   emptyText: {
     fontSize: 14,

@@ -12,7 +12,7 @@ import { useEffect, useMemo, useCallback, useState } from "react";
 import MainLayout from "../components/MainLayout";
 import HomeOverview from "../components/home/HomeOverview";
 import AccountsCard from "../components/home/AccountsCard";
-import TopCategoryCard from "../components/home/TopCategoryCard";
+import ExpensesByCategoryCard from "../components/ExpensesByCategoryCard";
 import CreditCardsCard from "../components/home/CreditCardsCard";
 import GoalCard from "../components/home/GoalCard";
 import CreateGoalModal from "../components/CreateGoalModal";
@@ -252,10 +252,11 @@ export default function Home() {
             <View style={{ height: 24 }} />
 
             {/* 5. Onde você gastou (categoria principal) */}
-            <TopCategoryCard 
+            <ExpensesByCategoryCard
               expenses={categoryExpenses}
               totalExpenses={report?.expense || totalExpense}
-              onPress={() => navigation.navigate('Relatórios')}
+              maxItems={5}
+              showTitle={true}
             />
 
             {/* Modais */}

@@ -5,10 +5,9 @@ import { useAuth } from '../contexts/authContext';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppTheme } from '../contexts/themeContext';
 import MainLayout from '../components/MainLayout';
-import ExpensesByCategoryCard from '../components/ExpensesByCategoryCard';
 import { spacing, borderRadius, getShadow } from '../theme';
 import { formatCurrencyBRL } from '../utils/format';
-import { useMonthReport, useExpensesByCategory } from '../hooks/useFirebaseTransactions';
+import { useMonthReport } from '../hooks/useFirebaseTransactions';
 import { getAllCreditCards } from '../services/creditCardService';
 import { getBillDetails } from '../services/creditCardBillService';
 
@@ -86,7 +85,6 @@ export default function Reports() {
 
   // Dados do relatório
   const { report, loading } = useMonthReport(currentMonth, currentYear);
-  const { expenses: categoryExpenses } = useExpensesByCategory(currentMonth, currentYear);
 
   // Estado para faturas futuras
   const [futureCommitments, setFutureCommitments] = useState<Array<{
@@ -463,14 +461,6 @@ export default function Reports() {
                 </Text>
               </View>
             </View>
-
-            {/* Top categorias de gastos */}
-            <ExpensesByCategoryCard 
-              expenses={categoryExpenses}
-              totalExpenses={report?.expense || 0}
-              maxItems={5}
-              showTitle={true}
-            />
 
           </View>
         </View>
