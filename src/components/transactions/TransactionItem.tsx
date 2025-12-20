@@ -82,9 +82,9 @@ function TransactionItemComponent({
       {/* Ícone da categoria */}
       <View style={[styles.iconContainer, { backgroundColor: color + '15' }]}>
         {goalName ? (
-          <MaterialCommunityIcons name="flag-checkered" size={24} color={color} />
+          <MaterialCommunityIcons name="flag-checkered" size={18} color={color} />
         ) : categoryIcon ? (
-          <MaterialCommunityIcons name={categoryIcon as any} size={24} color={color} />
+          <MaterialCommunityIcons name={categoryIcon as any} size={18} color={color} />
         ) : (
           <Text style={[styles.iconLabel, { color }]}>{initial}</Text>
         )}
@@ -157,9 +157,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   iconContainer: { 
-    width: 48, 
-    height: 48, 
-    borderRadius: 24,
+    width: 32, 
+    height: 32, 
+    borderRadius: borderRadius.sm,
     alignItems: 'center', 
     justifyContent: 'center',
     marginRight: spacing.sm + 2,
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   },
   iconLabel: { 
     fontWeight: '700',
-    fontSize: 18,
+    fontSize: 14,
   },
   content: {
     flex: 1,

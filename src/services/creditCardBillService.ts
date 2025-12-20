@@ -292,9 +292,8 @@ export async function payBill(
     year,
     accountId,
     accountName: account.name,
-    categoryId: 'credit-card-payment',
-    categoryName: 'Pagamento de Cartão',
-    categoryIcon: 'credit-card',
+    // Não incluir categoria - pagamento de fatura não é uma categoria de despesa
+    // As despesas reais já foram registradas nas compras do cartão
     creditCardBillId: billId, // Marcar que esta transação é um pagamento de fatura
     recurrence: 'none' as const,
     status: 'completed' as const,

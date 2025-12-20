@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, RefreshControl } from 'react-native';
+import { FAB } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -528,17 +529,59 @@ export default function Launches() {
         </ScrollView>
       </View>
 
-      {/* Summary Bar - Fixo acima do footer */}
-      <View style={[styles.summaryContainer, { backgroundColor: colors.card, bottom: summaryBottom }, getShadow(colors)]}>
-        {/* Tooltip de Saldo Previsto */}
-        {showForecastTooltip && (
-          <View style={[styles.tooltipContainer, { backgroundColor: colors.bg }]}>
-            <Text style={[styles.tooltipLabel, { color: colors.textMuted }]}>Saldo Previsto</Text>
-            <Text style={[styles.tooltipValue, { color: forecast.forecastBalance >= 0 ? balanceColor : expenseColor }]}>
+      {/* FAB para Saldo Previsto */}
+      <FAB
+        icon="chart-line"
+        size="small"
+        style={[
+          styles.forecastFab,
+          { 
+            backgroundColor: colors.primary,
+            bottom: summaryBottom + 70,
+          }
+        ]}
+        color="#FFFFFF"
+        onPress={() => setShowForecastTooltip(!showForecastTooltip)}
+      />
+      
+      {/* Tooltip de Saldo Previsto */}
+      {showForecastTooltip && (
+        <Pressable 
+          style={styles.tooltipOverlay}
+          onPress={() => setShowForecastTooltip(false)}
+        >
+          <View style={[styles.tooltipCard, { backgroundColor: colors.card }]}>
+            <Text style={[styles.tooltipTitle, { color: colors.text }]}>Saldo Previsto</Text>
+            <Text style={[styles.tooltipAmount, { color: forecast.forecastBalance >= 0 ? colors.income : expenseColor }]}>
               {formatCurrencyBRL(forecast.forecastBalance)}
             </Text>
+            <View style={[styles.tooltipDivider, { backgroundColor: colors.border }]} />
+            <View style={styles.tooltipDetails}>
+              <View style={styles.tooltipRow}>
+                <Text style={[styles.tooltipDetailLabel, { color: colors.textMuted }]}>Concluído:</Text>
+                <Text style={[styles.tooltipDetailValue, { color: forecast.realizedBalance >= 0 ? colors.income : expenseColor }]}>
+                  {formatCurrencyBRL(forecast.realizedBalance)}
+                </Text>
+              </View>
+              <View style={styles.tooltipRow}>
+                <Text style={[styles.tooltipDetailLabel, { color: colors.textMuted }]}>Entradas pendentes:</Text>
+                <Text style={[styles.tooltipDetailValue, { color: colors.income }]}>
+                  +{formatCurrencyBRL(forecast.pendingIncome)}
+                </Text>
+              </View>
+              <View style={styles.tooltipRow}>
+                <Text style={[styles.tooltipDetailLabel, { color: colors.textMuted }]}>Saídas pendentes:</Text>
+                <Text style={[styles.tooltipDetailValue, { color: expenseColor }]}>
+                  -{formatCurrencyBRL(forecast.pendingExpense)}
+                </Text>
+              </View>
+            </View>
           </View>
-        )}
+        </Pressable>
+      )}
+
+      {/* Summary Bar - Fixo acima do footer */}
+      <View style={[styles.summaryContainer, { backgroundColor: colors.card, bottom: summaryBottom }, getShadow(colors)]}>
         
         {/* Resumo simplificado */}
         <View style={styles.summaryBar}>
@@ -553,17 +596,9 @@ export default function Launches() {
           </View>
           <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
           <View style={styles.summaryItem}>
-            <View style={styles.summaryItemWithInfo}>
-              <Text style={[styles.summaryValue, { color: balance >= 0 ? balanceColor : expenseColor }]}>
-                {formatCurrencyBRL(balance)}
-              </Text>
-              <Pressable 
-                onPress={() => setShowForecastTooltip(!showForecastTooltip)}
-                style={({ pressed }) => [styles.infoIcon, pressed && { opacity: 0.5 }]}
-              >
-                <MaterialCommunityIcons name="information-outline" size={16} color={colors.textMuted} />
-              </Pressable>
-            </View>
+            <Text style={[styles.summaryValue, { color: balance >= 0 ? colors.primary : expenseColor }]}>
+              {formatCurrencyBRL(balance)}
+            </Text>
             <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>saldo atual</Text>
           </View>
         </View>
@@ -719,36 +754,62 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
   },
-  summaryItemWithInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  infoIcon: {
-    padding: 2,
-  },
-  tooltipContainer: {
+  forecastFab: {
     position: 'absolute',
-    top: -50,
-    alignSelf: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.md,
+    right: 16,
+  },
+  tooltipOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  tooltipCard: {
+    width: '85%',
+    maxWidth: 320,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  tooltipLabel: {
-    fontSize: 11,
-    textAlign: 'center',
-    marginBottom: 2,
-  },
-  tooltipValue: {
+  tooltipTitle: {
     fontSize: 16,
     fontWeight: '700',
     textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
+  tooltipAmount: {
+    fontSize: 28,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: spacing.md,
+  },
+  tooltipDivider: {
+    height: 1,
+    marginVertical: spacing.md,
+  },
+  tooltipDetails: {
+    gap: spacing.sm,
+  },
+  tooltipRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  tooltipDetailLabel: {
+    fontSize: 14,
+  },
+  tooltipDetailValue: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   summaryDivider: {
     width: 1,
