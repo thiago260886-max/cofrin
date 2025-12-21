@@ -11,13 +11,14 @@ export default function SimpleHeader({ title }: SimpleHeaderProps) {
   const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
   
-  const topPadding = Math.max(insets.top, 16) + spacing.md;
+  const topPadding = Math.max(insets.top, 8) + 8;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
-      <View style={[styles.header, { paddingTop: topPadding }]}>
-        <Text style={[styles.title, { color: colors.primary }]}>{title}</Text>
+      <View style={[styles.header, { paddingTop: topPadding, paddingBottom: 8 }]}>
+        <Text style={[styles.title, { color: colors.textMuted }]}>{title}</Text>
       </View>
+      <View style={[styles.divider, { backgroundColor: colors.border }]} />
     </View>
   );
 }
@@ -31,10 +32,18 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.xs,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  divider: {
+    height: 1,
+    width: '100%',
+    opacity: 0.5,
   },
 });

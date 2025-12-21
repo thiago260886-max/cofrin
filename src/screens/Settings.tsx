@@ -39,8 +39,7 @@ export default function Settings({ navigation }: any) {
     { id: "edit_profile", label: "Editar perfil", icon: "account-edit", screen: "EditProfile" },
     { id: "accounts", label: "Configurar contas", icon: "bank", screen: "ConfigureAccounts" },
     { id: "cards", label: "Cartões de crédito", icon: "credit-card", screen: "CreditCards" },
-    { id: "categories", label: "Categorias", icon: "tag-multiple", screen: "Categories" },
-    { id: "my_goals", label: "Meus objetivos", icon: "trophy", screen: "Meus Objetivos" },
+    { id: "categories", label: "Configurar categorias", icon: "tag-multiple", screen: "Categories" },
   ];
 
   const secondaryItems: MenuItem[] = [
@@ -192,29 +191,23 @@ export default function Settings({ navigation }: any) {
         {/* Header simples */}
         <SimpleHeader title="Configurações" />
 
-        {/* Perfil resumido */}
-        <View style={styles.centeredContainer}>
-          <View style={styles.profileCard}>
-            <View style={[styles.avatarCircle, { backgroundColor: colors.primaryBg }]}>
-              <MaterialCommunityIcons name="account" size={32} color={colors.primary} />
-            </View>
-            <View style={styles.profileInfo}>
-              <Text style={[styles.userName, { color: colors.text }]}>{userName}</Text>
-              <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{userEmail}</Text>
-            </View>
-          </View>
-        </View>
-
       {/* Cards de menu */}
       <View style={styles.centeredContainer}>
         <View style={styles.menuContainer}>
         {/* Menu principal */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-            CONFIGURAÇÕES
-          </Text>
           <View style={[styles.card, { backgroundColor: colors.card }, getShadow(colors)]}>
             {menuItems.map((item, idx) => renderMenuItem(item, idx === menuItems.length - 1))}
+          </View>
+        </View>
+
+        {/* Menu secundário */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+            SUPORTE
+          </Text>
+          <View style={[styles.card, { backgroundColor: colors.card }, getShadow(colors)]}>
+            {secondaryItems.map((item, idx) => renderMenuItem(item, idx === secondaryItems.length - 1))}
           </View>
         </View>
 
@@ -241,16 +234,6 @@ export default function Settings({ navigation }: any) {
                 color={colors.textMuted} 
               />
             </Pressable>
-          </View>
-        </View>
-
-        {/* Menu secundário */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-            SUPORTE
-          </Text>
-          <View style={[styles.card, { backgroundColor: colors.card }, getShadow(colors)]}>
-            {secondaryItems.map((item, idx) => renderMenuItem(item, idx === secondaryItems.length - 1))}
           </View>
         </View>
 
@@ -283,6 +266,7 @@ const styles = StyleSheet.create({
   },
   centeredContainer: {
     maxWidth: 1200,
+    paddingTop: 10,
     width: '100%',
     alignSelf: 'center',
   },

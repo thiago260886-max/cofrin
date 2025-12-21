@@ -9,6 +9,7 @@ import { useAppTheme } from '../contexts/themeContext';
 import { useAllGoals } from '../hooks/useAllGoals';
 import { useTransactionRefresh } from '../contexts/transactionRefreshContext';
 import MainLayout from '../components/MainLayout';
+import SimpleHeader from '../components/SimpleHeader';
 import CreateGoalModal from '../components/CreateGoalModal';
 import AddToGoalModal from '../components/AddToGoalModal';
 import { spacing, borderRadius, getShadow } from '../theme';
@@ -366,27 +367,42 @@ export default function ManageGoals() {
 
   return (
     <MainLayout>
+      <SimpleHeader title="Metas Financeiras" />
       <ScrollView
         style={[styles.root, { backgroundColor: colors.bg }]}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top || 16, paddingBottom: 100 }
+          { paddingBottom: 100 }
         ]}
       >
         <View style={styles.centeredContainer}>
           <View style={styles.content}>
-            {/* Header */}
-            <View style={styles.header}>
-              <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-                <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
-              </Pressable>
-              <View style={styles.headerTextContainer}>
-                <Text style={[styles.title, { color: '#4A2FA8' }]}>Acompanhar minhas metas</Text>
-                <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-                  {goals.length} {goals.length === 1 ? 'meta ativa' : 'metas ativas'}
-                </Text>
+            {/* Subtítulo com contagem */}
+            <Text style={[styles.subtitle, { color: colors.textMuted, marginBottom: spacing.md }]}>
+              {goals.length} {goals.length === 1 ? 'meta ativa' : 'metas ativas'}
+            </Text>
+
+            {/* Botão para gerenciar metas */}
+            <Pressable
+              onPress={() => navigation.navigate('Meus Objetivos')}
+              style={({ pressed }) => [
+                styles.manageButton,
+                { 
+                  backgroundColor: pressed ? colors.primaryLight : colors.card,
+                  borderColor: colors.primary,
+                },
+                getShadow(colors)
+              ]}
+            >
+              <View style={[styles.manageButtonIcon, { backgroundColor: colors.primaryLight }]}>
+                <MaterialCommunityIcons name="trophy-outline" size={20} color={colors.primary} />
               </View>
-            </View>
+              <View style={styles.manageButtonText}>
+                <Text style={[styles.manageButtonTitle, { color: colors.text }]}>Meus Objetivos</Text>
+                <Text style={[styles.manageButtonDesc, { color: colors.textMuted }]}>Configurar e editar suas metas</Text>
+              </View>
+              <MaterialCommunityIcons name="chevron-right" size={24} color={colors.textMuted} />
+            </Pressable>
 
             {/* Lista de metas */}
             {goals.length > 0 ? (
@@ -626,5 +642,32 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: spacing.sm,
     lineHeight: 20,
+  },
+  manageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    marginBottom: spacing.lg,
+  },
+  manageButtonIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
+  manageButtonText: {
+    flex: 1,
+  },
+  manageButtonTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  manageButtonDesc: {
+    fontSize: 12,
+    marginTop: 2,
   },
 });

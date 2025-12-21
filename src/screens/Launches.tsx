@@ -16,6 +16,7 @@ import { useAuth } from '../contexts/authContext';
 import { useTransactionRefresh } from '../contexts/transactionRefreshContext';
 import { formatCurrencyBRL } from '../utils/format';
 import MainLayout from '../components/MainLayout';
+import SimpleHeader from '../components/SimpleHeader';
 import { FOOTER_HEIGHT } from '../components/AppFooter';
 import { spacing, borderRadius, getShadow } from '../theme';
 import type { Transaction, TransactionStatus } from '../types/firebase';
@@ -417,13 +418,11 @@ export default function Launches() {
 
   return (
     <MainLayout>
+      <SimpleHeader title="Fluxo de Caixa" />
       <View style={[styles.root, { backgroundColor: colors.bg }]}>
         <ScrollView 
           style={styles.scrollView} 
-          contentContainerStyle={[
-            styles.scrollContent,
-            { paddingTop: insets.top || 16 }
-          ]} 
+          contentContainerStyle={styles.scrollContent} 
           keyboardShouldPersistTaps="handled"
           refreshControl={
             <RefreshControl
